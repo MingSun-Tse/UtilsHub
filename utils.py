@@ -138,7 +138,7 @@ class LogHub(object):
     
 def is_img(x):
   ext = x.splitext(x)
-  return ext.lower() in [".png", ".jpg", ".jpeg", ".bmp"])
+  return ext.lower() in [".png", ".jpg", ".jpeg", ".bmp"]
 
 def load_param_from_t7(model, in_layer_index, out_layer):
   out_layer.weight.data.copy_(model.get(in_layer_index).weight.data)
