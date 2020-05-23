@@ -191,15 +191,31 @@ def plot_weights_heatmap(weights, out_path):
 def strlist_to_list(sstr, ttype):
     '''
         example:
-        # self.args.stage_pr = [0, 0.3, 0.3, 0.3, 0]
-        # self.args.skip_layers = ['1.0', '2.0', '2.3', '3.0', '3.5']
+        # self.args.stage_pr = [0, 0.3, 0.3, 0.3, 0, ]
+        # self.args.skip_layers = ['1.0', '2.0', '2.3', '3.0', '3.5', ]
         turn these into a list of <ttype> (float or str or int etc.)
     '''
     out = []
     sstr = sstr.split("[")[1].split("]")[0]
     for x in sstr.split(','):
-        x = ttype(x.strip())
-        out.append(x)
+        x = x.strip()
+        if x:
+            x = ttype(x)
+            out.append(x)
+    return out
+
+def strdict_to_dict(sstr, ttype):
+    '''
+        '{"1": 0.04, "2": 0.04, "4": 0.03, "5": 0.02, "7": 0.03, }
+    '''
+    out = {}
+    sstr = sstr.split("{")[1].split("}")[0]
+    for x in sstr.split(','):
+        x = x.strip()
+        if x:
+            k = x.split(':')[0]
+            v = ttype(x.split(':')[1].strip())
+            out[k] = v
     return out
     
 def check_path(x):
