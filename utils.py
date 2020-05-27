@@ -148,14 +148,18 @@ class PresetLRScheduler(object):
         print('Using a preset learning rate schedule:')
         pprint(decay_schedule)
 
-    def __call__(self, optimizer, epoch):
+    def __call__(self, optimizer, e):
         epochs = list(self.decay_schedule.keys())
-        assert(type(epochs[0]) == int)
-        epochs = sorted(epochs) # exaple: [0, 30, 45]
+        assert type(epochs[0]) == int
+        epochs = sorted(epochs) # example: [0, 30, 45]
+        lr = self.decay_schedule[epochs[-1]]
         for i in range(len(epochs) - 1):
-            if epochs[i] <= epoch < epochs[i+1]:
-                for param_group in optimizer.param_groups:
-                    param_group['lr'] = self.decay_schedule[epochs[i]]
+            if epochs[i] <= e < epochs[i+1]:
+                lr = self.decay_schedule[epochs[i]]
+                break
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
+                    
         # for param_group in optimizer.param_groups:
         #     current_lr = param_group['lr']
         #     new_lr = self.decay_schedule.get(iteration, current_lr)
@@ -441,4 +445,5 @@ def plot_weights_heatmap(weights, out_path):
     fig.savefig(out_path, dpi=200)
     plt.close(fig)
     
-    
+# class AccuracyAnalyzer():
+#     def __init__
