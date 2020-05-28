@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import math
 import os
 import shutil as sh
 from distutils.dir_util import copy_tree
@@ -33,6 +34,10 @@ class LogPrinter(object):
         print(out_str, file=self.file, flush=True) # print to txt
         if self.print_to_screen:
             print(out_str) # print to screen
+    
+    def accprint(self, *in_str):
+        blank = '  ' * int(self.ExpID[-1])
+        self.__call__(blank, *in_str)
 
     def print_args(self, args):
         '''
