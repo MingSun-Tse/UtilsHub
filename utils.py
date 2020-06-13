@@ -445,5 +445,53 @@ def plot_weights_heatmap(weights, out_path):
     fig.savefig(out_path, dpi=200)
     plt.close(fig)
     
-# class AccuracyAnalyzer():
-#     def __init__
+class AccuracyAnalyzer():
+    def __init__(self):
+        self.lr_state = OrderedDict()
+    
+    def _register(self, lr, step, acc):
+        '''
+            <step> is an abstraction, which can be iteration or epoch
+        '''
+        lr = str(lr)
+        if lr in self.lr_state:
+            self.lr_state[lr].append([step, acc])
+        else:
+            self.lr_state[lr] = [[step, acc]]
+
+    def _get_value(self, line_seg, key, type_func=str, shift=1):
+        for i in range(len(line_seg)):
+            if key in line_seg[i]:
+                break
+        value = line_seg[i + shift]
+        return type_func(value)
+
+    def register_from_log(self, log):
+        '''
+            <log> will be like this: 
+                [221700 29847 2020/06/13-04:27:58]  Acc1 = 72.6460 Acc5 = 90.9620 Epoch 77 (after update) lr 0.001 (Best Acc1 72.6920 @ Epoch 73)
+                [221700 29847 2020/06/13-04:51:17]  Acc1 = 72.5960 Acc5 = 90.9740 Epoch 78 (after update) lr 0.001 (Best Acc1 72.6920 @ Epoch 73)
+                [221700 29847 2020/06/13-05:14:40]  Acc1 = 72.6940 Acc5 = 90.9560 Epoch 79 (after update) lr 0.001 (Best Acc1 72.6940 @ Epoch 79)
+                [221700 29847 2020/06/13-05:38:03]  Acc1 = 72.6340 Acc5 = 90.9080 Epoch 80 (after update) lr 0.001 (Best Acc1 72.6940 @ Epoch 79)
+        '''
+        for line in open(log):
+            line_seg = line.strip().lower().split()
+            lr = self._get_value(line_seg, 'lr')
+            step = self._get_value(line_seg, 'epoch', type_func=int)
+            acc = self._get_value(line_seg, 'acc1', type_func=float, shift=2)
+            self._register(lr, step, acc)
+    
+    def analyze(self, print_func=print):
+        keys = list(self.lr_state.keys())
+        vals = list(self.lr_state.values())
+        max_len_lr   = len(str(keys[-1])) # eg, from 0.1 to 0.0001
+        max_len_step = len(str(vals[-1][-1][0])) # eg, from 0 to 10000
+        format_str = 'lr %{}s (%{}d - %{}d): max acc = %.4f, min acc = %.4f, ave acc = %.4f'.format(max_len_lr, max_len_step, max_len_step)
+        for lr in self.lr_state.keys():
+            lr_state = np.array(self.lr_state[lr])
+            step = lr_state[:, 0]
+            acc = lr_state[:, 1]
+            print_func(format_str % (lr, step[0], step[-1], acc.max(), acc.min(), acc.mean()))
+    
+    def plot(self):
+        pass
