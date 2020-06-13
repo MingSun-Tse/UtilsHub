@@ -453,6 +453,8 @@ class AccuracyAnalyzer():
         '''
             <step> is an abstraction, which can be iteration or epoch
         '''
+        if any([x == None for x in [lr, step, acc]]):
+            return
         lr = str(lr)
         if lr in self.lr_state:
             self.lr_state[lr].append([step, acc])
@@ -463,8 +465,13 @@ class AccuracyAnalyzer():
         for i in range(len(line_seg)):
             if key in line_seg[i]:
                 break
+        if i == len(line_seg) - 1:
+            return None # did not find the <key> in this line
         value = line_seg[i + shift]
         return type_func(value)
+    
+    def clear(self):
+        self.lr_state = OrderedDict()
 
     def register_from_log(self, log):
         '''
@@ -473,6 +480,7 @@ class AccuracyAnalyzer():
                 [221700 29847 2020/06/13-04:51:17]  Acc1 = 72.5960 Acc5 = 90.9740 Epoch 78 (after update) lr 0.001 (Best Acc1 72.6920 @ Epoch 73)
                 [221700 29847 2020/06/13-05:14:40]  Acc1 = 72.6940 Acc5 = 90.9560 Epoch 79 (after update) lr 0.001 (Best Acc1 72.6940 @ Epoch 79)
                 [221700 29847 2020/06/13-05:38:03]  Acc1 = 72.6340 Acc5 = 90.9080 Epoch 80 (after update) lr 0.001 (Best Acc1 72.6940 @ Epoch 79)
+            Warning: This func depends on the specific log format. Need improvement.
         '''
         for line in open(log):
             line_seg = line.strip().lower().split()
@@ -483,8 +491,10 @@ class AccuracyAnalyzer():
     
     def analyze(self, print_func=print):
         keys = list(self.lr_state.keys())
+        max_len_lr = 0
+        for k in keys:
+            max_len_lr = max(len(str(k)), max_len_lr) # eg, from 0.1 to 0.0001
         vals = list(self.lr_state.values())
-        max_len_lr   = len(str(keys[-1])) # eg, from 0.1 to 0.0001
         max_len_step = len(str(vals[-1][-1][0])) # eg, from 0 to 10000
         format_str = 'lr %{}s (%{}d - %{}d): max acc = %.4f, min acc = %.4f, ave acc = %.4f'.format(max_len_lr, max_len_step, max_len_step)
         for lr in self.lr_state.keys():
