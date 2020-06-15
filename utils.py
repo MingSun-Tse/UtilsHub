@@ -210,7 +210,7 @@ def strlist_to_list(sstr, ttype):
 
 def strdict_to_dict(sstr, ttype):
     '''
-        '{"1": 0.04, "2": 0.04, "4": 0.03, "5": 0.02, "7": 0.03, }
+        '{"1": 0.04, "2": 0.04, "4": 0.03, "5": 0.02, "7": 0.03, }'
     '''
     out = {}
     sstr = sstr.split("{")[1].split("}")[0]
@@ -243,16 +243,6 @@ def parse_prune_ratio_vgg(sstr):
             end = int(k.split('-')[1].strip())
             out[begin : end+1] = float(v)
     return out
-
-import torch
-import torch.nn.functional as F
-import torch.nn as nn
-import numpy as np
-import glob
-import os
-import collections
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 def kronecker(A, B):
@@ -387,7 +377,7 @@ def smart_weights_load(net, w_path, key=None):
     loaded = torch.load(w_path, map_location=lambda storage, location: storage)
     
     # get state_dict
-    if isinstance(loaded, collections.OrderedDict):
+    if isinstance(loaded, OrderedDict):
         state_dict = loaded
     else:
         if key:
@@ -401,7 +391,7 @@ def smart_weights_load(net, w_path, key=None):
                 state_dict = loaded["G"]
     
     # remove the "module." surfix if using DataParallel before
-    new_state_dict = collections.OrderedDict()
+    new_state_dict = OrderedDict()
     for k, v in state_dict.items():
         param_name = k.split("module.")[-1]
         new_state_dict[param_name] = v
@@ -505,3 +495,31 @@ class AccuracyAnalyzer():
     
     def plot(self):
         pass
+
+def get_layer_by_index(net, index):
+    cnt = -1
+    for _, m in net.named_modules():
+        if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
+            cnt += 1
+            if cnt == index:
+                return m
+    return None
+
+def get_total_index_by_learnable_index(net, learnable_index):
+    '''
+        learnable_index: index when only counting learnable layers (conv or fc, no bn);
+        total_index: count relu, pooling etc in.
+    '''
+    layer_type_considered = [nn.Conv2d, nn.ReLU, nn.LeakyReLU, nn.PReLU, 
+        nn.BatchNorm2d, nn.MaxPool2d, nn.AvgPool2d, nn.Linear]
+    cnt_total = -1
+    cnt_learnable = -1
+    for _, m in net.named_modules():
+        cond = [isinstance(m, x) for x in layer_type_considered]
+        if any(cond):
+            cnt_total += 1
+            if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
+                cnt_learnable += 1
+                if cnt_learnable == learnable_index:
+                    return cnt_total
+    return None
