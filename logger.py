@@ -37,7 +37,13 @@ class LogPrinter(object):
     def accprint(self, *in_str):
         blank = '  ' * int(self.ExpID[-1])
         self.__call__(blank, *in_str)
-
+    
+    def netprint(self, *in_str):
+        for x in in_str:
+            print(x, file=self.file, flush=True)
+            if self.print_to_screen:
+                print(x)
+    
     def print_args(self, args):
         '''
             Example: [('batch_size', 16) ('decoder', models/small16x_ae_base/d5_base.pth)]
