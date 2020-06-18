@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.init as init
+import torch.nn.functional as F
 import torchvision
 from torch.autograd import Variable
 from pprint import pprint
@@ -257,10 +258,10 @@ def np_to_torch(x):
     x= torch.from_numpy(x).float()
     return x
 
-def kd_loss(y, teacher_scores, temp=1):
-    p = F.log_softmax(y / temp, dim=1)
+def kd_loss(student_scores, teacher_scores, temp=1):
+    p = F.log_softmax(student_scores / temp, dim=1)
     q = F.softmax(teacher_scores / temp, dim=1)
-    l_kl = F.kl_div(p, q, size_average=False) / y.shape[0]
+    l_kl = F.kl_div(p, q, size_average=False) / student_scores.shape[0]
     return l_kl
 
 def test(net, test_loader):
@@ -523,3 +524,13 @@ def get_total_index_by_learnable_index(net, learnable_index):
                 if cnt_learnable == learnable_index:
                     return cnt_total
     return None
+
+def cal_correlation(X, sub_mean=False):
+    '''Calculate the correlation matrix for a pytorch tensor.
+    Input shape: [n_sample, n_attr]
+    Output shape: [n_attr, n_attr]
+    '''
+    if sub_mean:
+        X -= X.mean(dim=0)
+    corr = torch.mm(X.t(), X) / X.size(0)
+    return corr
