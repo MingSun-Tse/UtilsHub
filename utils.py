@@ -525,12 +525,46 @@ def get_total_index_by_learnable_index(net, learnable_index):
                     return cnt_total
     return None
 
-def cal_correlation(X, sub_mean=False):
+def cal_correlation(x, coef=False):
     '''Calculate the correlation matrix for a pytorch tensor.
     Input shape: [n_sample, n_attr]
     Output shape: [n_attr, n_attr]
+    Refer to: https://github.com/pytorch/pytorch/issues/1254
     '''
-    if sub_mean:
-        X -= X.mean(dim=0)
-    corr = torch.mm(X.t(), X) / X.size(0)
+    # calculate covariance matrix
+    x -= x.mean(dim=0)
+    c = x.t().mm(x) / (x.size(0) - 1)
+    
+    if coef:
+        # normalize covariance matrix
+        d = torch.diag(c)
+        stddev = torch.pow(d, 0.5)
+        c = c.div(stddev.expand_as(c))
+        c = c.div(stddev.expand_as(c).t())
+
+        # clamp between -1 and 1
+        # probably not necessary but numpy does it
+        c = torch.clamp(c, -1.0, 1.0)
+    return c
+
+def get_class_corr(loader, model):
+    model.eval().cuda()
+    logits = 0
+    n_batch = len(loader)
+    with torch.no_grad():
+        for ix, data in enumerate(loader):
+            input = data[0]
+            print('[%d/%d] -- forwarding' % (ix, n_batch))
+            input = input.float().cuda()
+            if type(logits) == int:
+                logits = model(input) # [batch_size, n_class]
+            else:
+                logits = torch.cat([logits, model(input)], dim=0)
+    # Use numpy:
+    # logits -= logits.mean(dim=0)
+    # logits = logits.data.cpu().numpy()
+    # corr = np.corrcoef(logits, rowvar=False)
+
+    # Use pytorch
+    corr = cal_correlation(logits, coef=True)
     return corr
