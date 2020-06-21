@@ -259,9 +259,13 @@ def np_to_torch(x):
     return x
 
 def kd_loss(student_scores, teacher_scores, temp=1):
+    '''Knowledge distillation loss: soft target
+    '''
     p = F.log_softmax(student_scores / temp, dim=1)
-    q = F.softmax(teacher_scores / temp, dim=1)
-    l_kl = F.kl_div(p, q, size_average=False) / student_scores.shape[0]
+    q =     F.softmax(teacher_scores / temp, dim=1)
+    # l_kl = F.kl_div(p, q, size_average=False) / student_scores.shape[0] # previous working loss
+    l_kl = F.kl_div(p, q, reduction='batchmean') # 2020-06-21 @mingsun-tse: Since 'size_average' is deprecated, \
+    # use 'reduction' instead. In probation.
     return l_kl
 
 def test(net, test_loader):
