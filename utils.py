@@ -568,3 +568,8 @@ def get_class_corr(loader, model):
     # Use pytorch
     corr = cal_correlation(logits, coef=True)
     return corr
+
+def cal_acc(logits, y):
+    pred = logits.argmax(dim=1)
+    acc = pred.eq(y.data.view_as(pred)).sum().float() / y.size(0)
+    return acc
