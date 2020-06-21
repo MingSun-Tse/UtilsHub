@@ -59,7 +59,6 @@ class LogPrinter(object):
         logtmp = logtmp[:-1] + "]"
         self.__call__(logtmp)
 
-
 class LogTracker(object):
     def __init__(self, momentum=0.9):
         self.loss = OrderedDict()
@@ -200,6 +199,7 @@ class Logger(object):
 
         # initial print: save args
         self.print_script()
+        self.print_note()
         args.CodeID = self.get_CodeID()
         self.log_printer.print_args(args)
         self.cache_model()
@@ -264,6 +264,10 @@ class Logger(object):
               file=self.logtxt, flush=True)
         print(" ".join(["CUDA_VISIBLE_DEVICES=xx python", *sys.argv]),
               file=sys.stdout, flush=True)
+
+    def print_note(self):
+        print('Exp Note [%s]: %s' % (self.ExpID, self.args.note), file=self.logtxt, flush=True)
+        print('Exp Note [%s]: %s' % (self.ExpID, self.args.note), file=sys.stdout, flush=True)
 
     def plot(self, name, out_path):
         self.log_tracker.plot(name, out_path)
