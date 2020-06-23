@@ -192,7 +192,6 @@ class Logger(object):
         self.ExpID = self.get_ExpID()
         self.set_up_dir()
 
-        # TODO: logprint -> log_printer
         self.log_printer = LogPrinter(
             self.logtxt, self.ExpID, self.args.debug or self.args.screen_print)  # for all txt logging
         self.log_tracker = LogTracker()  # for all numerical logging
@@ -200,11 +199,12 @@ class Logger(object):
         # initial print: save args
         self.print_script()
         self.print_note()
+        if not args.debug:
+            self.__send_to_exp_hub()
         args.CodeID = self.get_CodeID()
         self.log_printer.print_args(args)
         self.cache_model()
         self.n_log_item = 0 
-
 
     def get_CodeID(self):
         if self.args.CodeID:
@@ -266,8 +266,14 @@ class Logger(object):
               file=sys.stdout, flush=True)
 
     def print_note(self):
-        print('Exp Note [%s]: %s' % (self.ExpID, self.args.note), file=self.logtxt, flush=True)
-        print('Exp Note [%s]: %s' % (self.ExpID, self.args.note), file=sys.stdout, flush=True)
+        server = ""
+        if 'SERVER' in os.environ.keys():
+            server = os.environ["SERVER"]
+        project = self.get_project_name()
+        exp_id = self.ExpID.split('-')[-1] # SERVER138-20200623-095526
+        self.ExpNote = 'ExpNote [%s-%s-%s]: "%s"' % (server, project, exp_id, self.args.note)
+        print(self.ExpNote, file=self.logtxt, flush=True)
+        print(self.ExpNote, file=sys.stdout, flush=True)
 
     def plot(self, name, out_path):
         self.log_tracker.plot(name, out_path)
@@ -296,3 +302,25 @@ class Logger(object):
                     if not os.path.exists(dir_path):
                         os.makedirs(dir_path)
                     sh.copy(f_path, dir_path)
+
+    def get_project_name(self):
+        '''For example, 'Projects/CRD/logger.py', then return CRD
+        '''
+        file_path = os.path.abspath(__file__)
+        return file_path.split('/')[-2]
+    
+    def __send_to_exp_hub(self):
+        '''For every experiment, it will send <ExpNote> to a hub for the convenience of check later.
+        '''
+        today = time.strftime("%Y%m%d") + "_exps.txt"
+        today_remote = 'wanghuan@155.33.198.138:/home/wanghuan/Projects/ExpLogs/%s' % today
+        try:
+            script_pull = 'scp %s .' % today_remote
+            os.system(script_pull)
+        except:
+            pass
+        with open(today, 'a+') as f:
+            f.write(self.ExpNote + '\n')
+        script_push = 'scp %s %s' % (today, today_remote)
+        os.system(script_push)
+        os.remove(today)
