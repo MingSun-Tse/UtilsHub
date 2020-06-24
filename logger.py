@@ -18,7 +18,7 @@ from collections import OrderedDict
 pjoin = os.path.join
 
 # globals
-CONFIDENTIAL_SERVERS = ['202, 008']
+CONFIDENTIAL_SERVERS = ['202', '008']
 
 class LogPrinter(object):
     def __init__(self, file, ExpID, print_to_screen=False):
