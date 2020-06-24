@@ -18,7 +18,7 @@ from collections import OrderedDict
 pjoin = os.path.join
 
 # globals
-CONFIDENTIAL_SERVERS = ['202']
+CONFIDENTIAL_SERVERS = ['202, 008']
 
 class LogPrinter(object):
     def __init__(self, file, ExpID, print_to_screen=False):
@@ -318,10 +318,7 @@ class Logger(object):
         '''
         today_local = time.strftime("%Y%m%d") + "_exps.txt"
         if self.SERVER in CONFIDENTIAL_SERVERS:
-            local_hub = '~/Projects/ExpLogs'
-            if not os.path.exists(local_hub):
-                os.makedirs(local_hub)
-            today_remote = '%s/%s' % (local_hub, today_local)
+            today_remote = 'huwang@137.203.141.202:/homes/huwang/Projects/ExpLogs/%s' % today_local
         else:
             today_remote = 'wanghuan@155.33.198.138:/home/wanghuan/Projects/ExpLogs/%s' % today_local
         try:
