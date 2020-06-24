@@ -320,7 +320,7 @@ class Logger(object):
         if self.SERVER in CONFIDENTIAL_SERVERS:
             local_hub = '~/Projects/ExpLogs'
             if not os.path.exists(local_hub):
-                os.mkdirs(local_hub)
+                os.makedirs(local_hub)
             today_remote = '%s/%s' % (local_hub, today_local)
         else:
             today_remote = 'wanghuan@155.33.198.138:/home/wanghuan/Projects/ExpLogs/%s' % today_local
