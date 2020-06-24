@@ -17,6 +17,9 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from collections import OrderedDict
 pjoin = os.path.join
 
+# globals
+CONFIDENTIAL_SERVERS = ['202']
+
 class LogPrinter(object):
     def __init__(self, file, ExpID, print_to_screen=False):
         self.file = file
@@ -199,8 +202,10 @@ class Logger(object):
         # initial print: save args
         self.print_script()
         self.print_note()
-        if not args.debug:
-            self.__send_to_exp_hub()
+        if (not args.debug) and self.SERVER != '':
+            # If self.SERVER != '', it shows this is my computer, so call this func, which is just to my need.
+            # When others use my code, they probably need not call this func.
+            self.__send_to_exp_hub() 
         args.CodeID = self.get_CodeID()
         self.log_printer.print_args(args)
         self.cache_model()
@@ -236,9 +241,11 @@ class Logger(object):
                 self.log_printer("ExpID format is wrong! Please check.")
                 exit(1)
         else:
+            self.SERVER = ''
             TimeID = time.strftime("%Y%m%d-%H%M%S")
             if 'SERVER' in os.environ.keys():
                 ExpID = "SERVER" + os.environ["SERVER"] + "-" + TimeID
+                self.SERVER = os.environ["SERVER"]
             else:
                 ExpID = TimeID
         return ExpID
@@ -266,12 +273,9 @@ class Logger(object):
               file=sys.stdout, flush=True)
 
     def print_note(self):
-        server = ""
-        if 'SERVER' in os.environ.keys():
-            server = os.environ["SERVER"]
         project = self.get_project_name() # the current project folder name
         exp_id = self.ExpID.split('-')[-1] # SERVER138-20200623-095526
-        self.ExpNote = 'ExpNote [%s-%s-%s]: "%s" -- %s' % (server, project, exp_id, self.args.note, args.project_name)
+        self.ExpNote = 'ExpNote [%s-%s-%s]: "%s" -- %s' % (self.SERVER, project, exp_id, self.args.note, args.project_name)
         print(self.ExpNote, file=self.logtxt, flush=True)
         print(self.ExpNote, file=sys.stdout, flush=True)
 
@@ -310,17 +314,23 @@ class Logger(object):
         return file_path.split('/')[-2]
     
     def __send_to_exp_hub(self):
-        '''For every experiment, it will send <ExpNote> to a hub for the convenience of check later.
+        '''For every experiment, it will send <ExpNote> to a hub for the convenience of checking.
         '''
-        today = time.strftime("%Y%m%d") + "_exps.txt"
-        today_remote = 'wanghuan@155.33.198.138:/home/wanghuan/Projects/ExpLogs/%s' % today
+        today_local = time.strftime("%Y%m%d") + "_exps.txt"
+        if self.SERVER in CONFIDENTIAL_SERVERS:
+            local_hub = '~/Projects/ExpLogs'
+            if not os.path.exists(local_hub):
+                os.mkdirs(local_hub)
+            today_remote = '%s/%s' % (local_hub, today_local)
+        else:
+            today_remote = 'wanghuan@155.33.198.138:/home/wanghuan/Projects/ExpLogs/%s' % today_local
         try:
             script_pull = 'scp %s .' % today_remote
             os.system(script_pull)
         except:
             pass
-        with open(today, 'a+') as f:
+        with open(today_local, 'a+') as f:
             f.write(self.ExpNote + '\n')
-        script_push = 'scp %s %s' % (today, today_remote)
+        script_push = 'scp %s %s' % (today_local, today_remote)
         os.system(script_push)
-        os.remove(today)
+        os.remove(today_local)
