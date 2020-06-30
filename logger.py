@@ -284,12 +284,14 @@ class Logger(object):
 
     def print(self, step):
         keys, values = self.log_tracker.format()
-        values += " (step = %d)" % step
-        if step % (self.args.print_interval * 10) == 0 \
-            or len(self.log_tracker.loss.keys()) > self.n_log_item:
-            self.log_printer(keys)
-            self.n_log_item = len(self.log_tracker.loss.keys())
-        self.log_printer(values)
+        k = keys.split("|")[0].strip()
+        if k: # only when there is sth to print, print 
+            values += " (step = %d)" % step
+            if step % (self.args.print_interval * 10) == 0 \
+                or len(self.log_tracker.loss.keys()) > self.n_log_item: # when a new loss is added into the loss pool, print
+                self.log_printer(keys)
+                self.n_log_item = len(self.log_tracker.loss.keys())
+            self.log_printer(values)
 
     def cache_model(self):
         '''
