@@ -13,7 +13,7 @@ import math
 SERVER = {
     '138': 'wanghuan@155.33.198.138:/home/wanghuan/Projects/{}/Experiments/*-{}/log/log.txt',
     '5'  : 'wanghuan@155.33.199.5:/home3/wanghuan/Projects/{}/Experiments/*-{}/log/log.txt',
-    '155': 'yulun@155.33.198.115:/media/yulun/12THD1/Huan_Projects/{}/Experiments/*-{}/log/log.txt',
+    '115': 'yulun@155.33.198.115:/media/yulun/12THD1/Huan_Projects/{}/Experiments/*-{}/log/log.txt',
     'clu': '', # cluster
     '170': 'huan@155.33.198.170:/home/wanghuan/Projects/{}/Experiments/*-{}/log/log.txt',
 }
