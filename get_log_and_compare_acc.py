@@ -100,4 +100,3 @@ for v, log_id in zip(value, log_ids):
 plt.grid()
 plt.legend()
 plt.show()
-
