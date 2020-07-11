@@ -6,16 +6,17 @@ import numpy as np
 import math
 
 '''Usage Example:
-    python get_log_and_compare_acc.py 138:DAFL:120845 138:DAFL:120835 5:CRD:070245
+    python get_log_and_compare_acc.py 138-DAFL-120845 138-DAFL-120835 5-CRD-070245
 '''
 
 # Log path template on different servers
 SERVER = {
     '138': 'wanghuan@155.33.198.138:/home/wanghuan/Projects/{}/Experiments/*-{}/log/log.txt',
     '5'  : 'wanghuan@155.33.199.5:/home3/wanghuan/Projects/{}/Experiments/*-{}/log/log.txt',
-    '155': 'yulun@155.33.198.115:/media/yulun/12THD1/Huan_Projects/{}/Experiments/*-{}/log/log.txt',
+    '115': 'yulun@155.33.198.115:/media/yu*/12THD1/Huan_Projects/{}/Experiments/*-{}/log/log.txt',
     'clu': '', # cluster
     '170': 'huan@155.33.198.170:/home/wanghuan/Projects/{}/Experiments/*-{}/log/log.txt',
+    '202': 'huwang@137.203.141.202:/homes/huwang/Projects/{}/Experiments/*-{}/log/log.txt',
 }
 
 def smooth(L, window=50):
@@ -56,34 +57,46 @@ def _get_value_from_log(log, key):
             value.append(v)
     return value
         
-def _fetch_log_file(server, project, log):
-    log_path = SERVER[server].format(project, log)
+def _fetch_log_file(server, project, log_id):
+    log_path = SERVER[server].format(project, log_id)
     script = 'scp "%s" .' % log_path
     os.system(script)
     ExpID = _get_ExpID_from_path()
     log_file = 'log_%s.txt' % ExpID
     sh.move('log.txt', log_file)
-    return log_file, ExpID
+    return log_file
 
+#################################
 value = []
-ExpID = []
+log_ids = []
 window = 1
 for arg in sys.argv[1:]:
-    if ":" not in arg:
+    if "-" not in arg:
         window = int(arg)
     else:
-        server, project, log = arg.split(':')
-        log, exp_id = _fetch_log_file(server, project, log)
-        v = _get_value_from_log(log, 'Acc1')
+        server, project, log_id = arg.split('-') # arg example: 202-CRD-002234. This means, we want the log on machine 202, project CRD, log_id 002234
+        local_log_files = [x for x in os.listdir('./') if x.startswith('log_') and x.endswith('.txt')]
+        
+        # get log file
+        log_file = ''
+        for f in local_log_files:
+            if log_id in f:
+                log_file = f
+                break
+        if log_file == '':
+            log_file = _fetch_log_file(server, project, log_id)
+        
+        # parsing from log file
+        v = _get_value_from_log(log_file, 'Acc1')
         value.append(v)
-        ExpID.append(exp_id)
+        log_ids.append(arg)
 
 min_len = np.min([len(v) for v in value])
-for v, exp_id in zip(value, ExpID):
-    step = int(round(len(v) * 1.0  / min_len))
+for v, log_id in zip(value, log_ids):
+    step = 1 # int(round(len(v) * 1.0  / min_len))
     v = v[::step]
     v = smooth(v, window=window)
-    plt.plot(v, label=exp_id)
+    plt.plot(v, label=log_id)
 plt.grid()
 plt.legend()
 plt.show()
