@@ -307,7 +307,8 @@ class Logger(object):
                     f_path = pjoin(root, f)
                     if not os.path.exists(dir_path):
                         os.makedirs(dir_path)
-                    sh.copy(f_path, dir_path)
+                    if os.path.exists(f_path):
+                        sh.copy(f_path, dir_path)
 
     def get_project_name(self):
         '''For example, 'Projects/CRD/logger.py', then return CRD
