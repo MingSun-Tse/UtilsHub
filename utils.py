@@ -515,8 +515,8 @@ def cal_correlation(x, coef=False):
     Refer to: https://github.com/pytorch/pytorch/issues/1254
     '''
     # calculate covariance matrix
-    x -= x.mean(dim=0)
-    c = x.t().mm(x) / (x.size(0) - 1)
+    y = x - x.mean(dim=0)
+    c = y.t().mm(y) / (y.size(0) - 1)
     
     if coef:
         # normalize covariance matrix
