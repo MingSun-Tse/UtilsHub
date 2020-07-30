@@ -7,6 +7,7 @@ from torch.autograd import Variable
 from pprint import pprint
 import numpy as np
 import os
+import time
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from collections import OrderedDict
@@ -556,3 +557,24 @@ def cal_acc(logits, y):
     pred = logits.argmax(dim=1)
     acc = pred.eq(y.data.view_as(pred)).sum().float() / y.size(0)
     return acc
+
+class Timer():
+    '''Log down iteration time and predict the left time for the left iterations
+    '''
+    def __init__(self, total_epoch):
+        self.total_epoch = total_epoch
+        self.time_stamp = []
+
+    def predict_finish_time(self, ave_window=3):
+        self.time_stamp.append(time.time()) # update time stamp
+        if len(self.time_stamp) == 1:
+            return 'Only one time stamp, not enough to predict the future'
+        interval = []
+        for i in range(len(self.time_stamp) - 1):
+            t = self.time_stamp[i + 1] - self.time_stamp[i]
+            interval.append(t)
+        sec_per_epoch = np.mean(interval[-ave_window:])
+        left_t = sec_per_epoch * (self.total_epoch - len(interval))
+        finish_t = left_t + time.time()
+        finish_t = time.strftime('%Y/%m/%d-%H:%M', time.localtime(finish_t))
+        return finish_t + ' (speed: %.2fs per epoch)' % sec_per_epoch

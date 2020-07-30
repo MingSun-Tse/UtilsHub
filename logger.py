@@ -180,7 +180,6 @@ class LogTracker(object):
         fig.savefig(out_path, dpi=200)
         plt.close(fig)
 
-
 class Logger(object):
     '''
         The top logger, which 
