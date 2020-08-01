@@ -89,7 +89,7 @@ def main():
     # analyze each independent exp
     for name in independent_exps:
         print('[%s]' % name)
-        print_acc_for_one_exp(all_exps, name)
+        print_acc_for_one_exp(all_exps, name + '_SERVER')
         print('')
 
 if __name__ == '__main__':
