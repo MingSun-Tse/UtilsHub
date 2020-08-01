@@ -50,11 +50,16 @@ def print_acc_for_one_exp(all_exps, name):
     for exp in all_exps:
         if name in exp:
             log_f = '%s/log/log.txt' % exp
+            acc_l = -1
+            acc_b = -1
             for line in open(log_f, 'r'):
                 if 'Epoch 240 (after update)' in line: # parsing accuracy
                     acc_l = _get_value(line, 'Acc1')
                     acc_b = _get_value(line, 'Best_Acc1')
                     break
+            if acc_b == -1:
+                print('This log is broken, so skip it')
+                continue
             acc_last.append(acc_l)
             acc_best.append(acc_b)
             _, id = _get_exp_name_id(exp)
