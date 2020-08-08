@@ -40,7 +40,7 @@ def _make_acc_str(acc_list, num_digit=2):
     output = ', '.join(acc_str) + ' -- %s (%s)' % (mean, std)
     return output
 
-def print_acc_for_one_exp(all_exps, name):
+def print_acc_for_one_exp(all_exps, name, epoch=240):
     '''In <all_exps>, pick those with <name> in their name for accuracy collection.
     '''
     exp_id = []
@@ -53,7 +53,7 @@ def print_acc_for_one_exp(all_exps, name):
             acc_l = -1
             acc_b = -1
             for line in open(log_f, 'r'):
-                if 'Epoch 240 (after update)' in line: # parsing accuracy
+                if 'Epoch %d (after update)' % epoch in line: # parsing accuracy
                     acc_l = _get_value(line, 'Acc1')
                     acc_b = _get_value(line, 'Best_Acc1')
                     break
@@ -81,6 +81,7 @@ def main():
         python ../UtilsHub/collect_experimental_results.py 20200731-18
     '''
     kw = sys.argv[1]
+    epoch = int(sys.argv[2])
     all_exps = glob.glob('Experiments/*%s*' % kw)
     all_exps.sort()
     
@@ -94,7 +95,7 @@ def main():
     # analyze each independent exp
     for name in independent_exps:
         print('[%s]' % name)
-        print_acc_for_one_exp(all_exps, name + '_SERVER')
+        print_acc_for_one_exp(all_exps, name + '_SERVER', epoch)
         print('')
 
 if __name__ == '__main__':
