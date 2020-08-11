@@ -200,7 +200,8 @@ class Logger(object):
 
         # initial print: save args
         self.print_script()
-        self.print_note()
+        if hasattr(self.args, 'note'):
+            self.print_note()
         if (not args.debug) and self.SERVER != '':
             # If self.SERVER != '', it shows this is my computer, so call this func, which is just to my need.
             # When others use my code, they probably need not call this func.
