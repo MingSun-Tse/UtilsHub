@@ -200,8 +200,7 @@ class Logger(object):
 
         # initial print: save args
         self.print_script()
-        if hasattr(self.args, 'note'):
-            self.print_note()
+        self.print_note()
         if (not args.debug) and self.SERVER != '':
             # If self.SERVER != '', it shows this is my computer, so call this func, which is just to my need.
             # When others use my code, they probably need not call this func.
@@ -275,6 +274,8 @@ class Logger(object):
     def print_note(self):
         project = self.get_project_name() # the current project folder name
         exp_id = self.ExpID.split('-')[-1] # SERVER138-20200623-095526
+        if not hasattr(self.args, 'note'):
+            self.args.note = ''
         self.ExpNote = 'ExpNote [%s-%s-%s]: "%s" -- %s' % (self.SERVER, project, exp_id, self.args.note, self.args.project_name)
         print(self.ExpNote, file=self.logtxt, flush=True)
         print(self.ExpNote, file=sys.stdout, flush=True)
