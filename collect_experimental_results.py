@@ -4,14 +4,18 @@ import numpy as np
 import glob
 pjoin = os.path.join
 
-def _get_value(line, key, type_func=float):
-    line_seg = line.split()
-    for i in range(len(line_seg)):
-        if key in line_seg[i]:
-            break
-    if i == len(line_seg) - 1:
-        return None # did not find the <key> in this line
-    value = type_func(line_seg[i + 1]) # example: "Acc: 0.7"
+def _get_value(line, key, type_func=float, exact_key=False):
+    if exact_key: # back compatibility
+        value = line.split(key)[1].strip().split()[0]
+        value = type_func(value)
+    else:
+        line_seg = line.split()
+        for i in range(len(line_seg)):
+            if line_seg[i].startswith(key): # example: 'Acc1: 0.7'
+                break
+        if i == len(line_seg) - 1:
+            return None # did not find the <key> in this line
+        value = type_func(line_seg[i + 1])
     return value
 
 def _get_exp_name_id(exp_path):
@@ -54,8 +58,16 @@ def print_acc_for_one_exp(all_exps, name, epoch=240):
             acc_b = -1
             for line in open(log_f, 'r'):
                 if 'Epoch %d (after update)' % epoch in line: # parsing accuracy
-                    acc_l = _get_value(line, 'Acc1')
-                    acc_b = _get_value(line, 'Best_Acc1')
+                    if 'Acc1 =' in line: # previous impel
+                        acc_l = _get_value(line, 'Acc1 =', exact_key=True)
+                    else:
+                        acc_l = _get_value(line, 'Acc1')
+                    if 'Best Acc1' in line: # previous impel
+                        acc_b = _get_value(line, 'Best Acc1', exact_key=True)
+                    elif 'Best_Acc1' in line:
+                        acc_b = _get_value(line, 'Best_Acc1')
+                    else:
+                        raise NotImplementedError
                     break
             if acc_b == -1:
                 print('This log is broken, so skip it')
