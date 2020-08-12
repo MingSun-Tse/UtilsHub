@@ -11,7 +11,7 @@ def _get_value(line, key, type_func=float, exact_key=False):
     else:
         line_seg = line.split()
         for i in range(len(line_seg)):
-            if line_seg[i].startswith(key): # example: 'Acc1: 0.7'
+            if key in line_seg[i]: # example: 'Acc1: 0.7'
                 break
         if i == len(line_seg) - 1:
             return None # did not find the <key> in this line
