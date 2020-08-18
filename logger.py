@@ -37,11 +37,14 @@ class LogPrinter(object):
         if self.print_to_screen:
             print(out_str) # print to screen
     
+    def logprint(self, *in_str): # to keep the interface uniform
+        self.__call__(*in_str)
+
     def accprint(self, *in_str):
         blank = '  ' * int(self.ExpID[-1])
         self.__call__(blank, *in_str)
     
-    def netprint(self, *in_str):
+    def netprint(self, *in_str): # i.e., print without any prefix
         for x in in_str:
             print(x, file=self.file, flush=True)
             if self.print_to_screen:
@@ -202,8 +205,8 @@ class Logger(object):
         self.print_script()
         self.print_note()
         if (not args.debug) and self.SERVER != '':
-            # If self.SERVER != '', it shows this is my computer, so call this func, which is just to my need.
-            # When others use my code, they probably need not call this func.
+            # If self.SERVER != '', it shows this is Huan's computer, then call this func, which is just a small feature to my need.
+            # When others use this code, they probably need NOT call this func.
             self.__send_to_exp_hub() 
         args.CodeID = self.get_CodeID()
         self.log_printer.print_args(args)
@@ -211,7 +214,7 @@ class Logger(object):
         self.n_log_item = 0 
 
     def get_CodeID(self):
-        if self.args.CodeID:
+        if hasattr(self.args, 'CodeID') and self.args.CodeID:
             return self.args.CodeID
         else:
             script = "git status >> wh_git_status.tmp"
@@ -230,10 +233,9 @@ class Logger(object):
             return x[:8]
 
     def get_ExpID(self):
-        if self.args.resume_ExpID:
+        if hasattr(self.args, 'resume_ExpID') and self.args.resume_ExpID:
             full_path = get_project_path(self.args.resume_ExpID)
-            exp_folder_name = os.path.basename(full_path)
-            # exp_folder_name is like "run_SERVER5-20191220-212041"
+            exp_folder_name = os.path.basename(full_path) # exp_folder_name is like "run_SERVER5-20191220-212041"
             ExpID = exp_folder_name.split("_")[-1]
             _, date, hr = ExpID.split("-")
             if not (date.isdigit() and hr.isdigit()):
@@ -251,9 +253,9 @@ class Logger(object):
 
     def set_up_dir(self):
         project_path = pjoin("Experiments/%s_%s" % (self.args.project_name, self.ExpID))
-        if self.args.resume_ExpID:
+        if hasattr(self.args, 'resume_ExpID') and self.args.resume_ExpID:
             project_path = get_project_path(self.args.resume_ExpID)
-        if self.args.debug: # debug has the highest priority. If debug, we will make sure all the things will be saved in Debug_dir.
+        if self.args.debug: # debug has the highest priority. If debug, all the things will be saved in Debug_dir
             project_path = "Debug_Dir"
 
         self.weights_path = pjoin(project_path, "weights")
@@ -263,13 +265,16 @@ class Logger(object):
         self.logplt_path  = pjoin(project_path, "log", "plot")
         self.logtxt_path  = pjoin(project_path, "log", "log.txt")
         mkdirs(self.weights_path, self.gen_img_path, self.logplt_path, self.cache_path)
-        self.logtxt = open(self.logtxt_path, "a+") # note: append to previous log txt file
+        self.logtxt = open(self.logtxt_path, "a+")
+        self.script_hist = open('.script_history', 'a+') # save local script history, for convenience of check
 
     def print_script(self):
         print(" ".join(["CUDA_VISIBLE_DEVICES=xx python", *sys.argv]),
               file=self.logtxt, flush=True)
         print(" ".join(["CUDA_VISIBLE_DEVICES=xx python", *sys.argv]),
               file=sys.stdout, flush=True)
+        print(" ".join(["CUDA_VISIBLE_DEVICES=xx python", *sys.argv]),
+              file=self.script_hist, flush=True)
 
     def print_note(self):
         project = self.get_project_name() # the current project folder name
