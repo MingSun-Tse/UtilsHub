@@ -217,19 +217,21 @@ class Logger(object):
         if hasattr(self.args, 'CodeID') and self.args.CodeID:
             return self.args.CodeID
         else:
-            script = "git status >> wh_git_status.tmp"
+            f = 'wh_git_status_%s.tmp' % time.time()
+            script = 'git status >> %s' % f
             os.system(script)
-            x = open("wh_git_status.tmp").readlines()
+            x = open(f).readlines()
             x = "".join(x)
+            os.remove(f)
             if "Changes not staged for commit" in x:
                 self.log_printer("Warning! Your code is not commited. Cannot be too careful.")
                 time.sleep(3)
-            os.remove("wh_git_status.tmp")
-
-            script = "git log --pretty=oneline >> wh_CodeID_file.tmp"
+            
+            f = 'wh_CodeID_file_%s.tmp' % time.time()
+            script = "git log --pretty=oneline >> %s" % f
             os.system(script)
-            x = open("wh_CodeID_file.tmp").readline()
-            os.remove("wh_CodeID_file.tmp")
+            x = open(f).readline()
+            os.remove(f)
             return x[:8]
 
     def get_ExpID(self):
