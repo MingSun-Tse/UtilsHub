@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.init as init
+from torch.utils.data import Dataset
 import torch.nn.functional as F
 import torchvision
 from torch.autograd import Variable
@@ -13,6 +14,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from collections import OrderedDict
 import copy
 import glob
+from PIL import Image
 
 def _weights_init(m):
     if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
@@ -395,6 +397,8 @@ def smart_weights_load(net, w_path, key=None):
                 state_dict =  loaded["S"]
             elif "G" in loaded.keys():
                 state_dict = loaded["G"]
+            elif 'model' in loaded.keys():
+                state_dict = loaded['model']
     
     # remove the "module." surfix if using DataParallel before
     new_state_dict = OrderedDict()
@@ -578,3 +582,16 @@ class Timer():
         finish_t = left_t + time.time()
         finish_t = time.strftime('%Y/%m/%d-%H:%M', time.localtime(finish_t))
         return finish_t + ' (speed: %.2fs per epoch)' % sec_per_epoch
+
+class Dataset_npy_batch(Dataset):
+    def __init__(self, npy_dir, transform, f='batch.npy'):
+        self.data = np.load(os.path.join(npy_dir, f), allow_pickle=True)
+        self.transform = transform
+    def __getitem__(self, index):
+        img = Image.fromarray(self.data[index][0])
+        img = self.transform(img)
+        label = self.data[index][1]
+        label = torch.LongTensor([label])[0]
+        return img.squeeze(0), label
+    def __len__(self):
+        return len(self.data)
