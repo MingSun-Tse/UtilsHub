@@ -327,18 +327,19 @@ class Logger(object):
     def __send_to_exp_hub(self):
         '''For every experiment, it will send <ExpNote> to a hub for the convenience of checking.
         '''
-        today_local = time.strftime("%Y%m%d") + "_exps.txt"
+        today_exp = time.strftime("%Y%m%d") + "_exps.txt"
         if self.SERVER in CONFIDENTIAL_SERVERS:
-            today_remote = 'huwang@137.203.141.202:/homes/huwang/Projects/ExpLogs/%s' % today_local
+            today_remote = 'huwang@137.203.141.202:/homes/huwang/Projects/ExpLogs/%s' % today_exp
         else:
-            today_remote = 'wanghuan@155.33.198.138:/home/wanghuan/Projects/ExpLogs/%s' % today_local
+            today_remote = 'wanghuan@155.33.198.138:/home/wanghuan/Projects/ExpLogs/%s' % today_exp
+        local_f = 'wh_exps_%s.tmp' % time.time()
         try:
-            script_pull = 'scp %s .' % today_remote
+            script_pull = 'scp %s %s' % (today_remote, local_f)
             os.system(script_pull)
         except:
             pass
-        with open(today_local, 'a+') as f:
+        with open(local_f, 'a+') as f:
             f.write(self.ExpNote + '\n')
-        script_push = 'scp %s %s' % (today_local, today_remote)
+        script_push = 'scp %s %s' % (local_f, today_remote)
         os.system(script_push)
-        os.remove(today_local)
+        os.remove(local_f)
