@@ -84,8 +84,8 @@ class JobManager():
                     time.sleep(10) # wait for 10 seconds so that the GPU is fully activated
                     break
                 else:
-                    print('[%s] ==> Found no vacant GPUs. Wait for another 2 minutes' % current_time)
-                    time.sleep(120)
+                    print('[%s] ==> Found no vacant GPUs. Wait for another 60 seconds' % current_time)
+                    time.sleep(60)
         print('==> All jobs have been executed. Congrats :-)')
 
 '''Usage: python auto_alloc_jobs.py script.sh
