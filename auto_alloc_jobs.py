@@ -1,6 +1,34 @@
 import os
 import sys
 import time
+import copy
+
+def replace_var(line, dict):
+    '''This function is to replace the variables in shell script.
+    '''
+    line_copy = copy.deepcopy(line)
+    max_len = len(line)
+    for i in range(max_len):
+        if line[i] == '$': # example: ../save/models/${T}_vanilla/$CKPT
+            for start in range(i + 1, max_len):
+                if line[start].isalpha():
+                    break
+            for end in range(start + 1, max_len):
+                if (not line[end].isalpha()) and (not line[end].isdigit()):
+                    break
+            
+            if end > start:     
+                var_name = line[start: end]
+            else:
+                var_name = line[start:] # special case: the $VAR is at the end of the line
+            real_var = dict[var_name]
+            
+            if line[i + 1] == '{':
+                var_name = '${%s}' % var_name
+            else:
+                var_name = '$%s' % var_name
+            line_copy = line_copy.replace(var_name, real_var)
+    return line_copy
 
 class JobManager():
     def __init__(self, f):
@@ -8,10 +36,21 @@ class JobManager():
 
     def read_jobs(self):
         jobs = []
+        dict = {}
         for line in open(self.script_f, 'r'):
             line = line.strip()
-            if line and (not line.startswith('#')):
-                jobs.append(line)
+            if line:
+                if '=' in line and (not line.startswith('python')) :
+                    k, v = line.split('=')
+                    if v[0] == '"' and v[-1] == '"': # example: T="vgg13"
+                        v = v[1:-1]
+                    if '$' in v:
+                        dict[k] = replace_var(v, dict)
+                    else:
+                        dict[k] = v
+                if line.startswith('python'):
+                    new_line = replace_var(line, dict)
+                    jobs.append(new_line)
         return jobs
         
     def get_vacant_GPU(self):
