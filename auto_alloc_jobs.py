@@ -6,6 +6,7 @@ import copy
 def replace_var(line, dict):
     '''This function is to replace the variables in shell script.
     '''
+    line = line.strip()
     line_copy = copy.deepcopy(line)
     max_len = len(line)
     for i in range(max_len):
@@ -13,11 +14,12 @@ def replace_var(line, dict):
             for start in range(i + 1, max_len):
                 if line[start].isalpha():
                     break
+            got_end = False
             for end in range(start + 1, max_len):
                 if (not line[end].isalpha()) and (not line[end].isdigit()):
+                    got_end = True
                     break
-            
-            if end > start:     
+            if got_end:     
                 var_name = line[start: end]
             else:
                 var_name = line[start:] # special case: the $VAR is at the end of the line
