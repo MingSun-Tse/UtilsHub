@@ -41,18 +41,19 @@ class JobManager():
         dict = {}
         for line in open(self.script_f, 'r'):
             line = line.strip()
-            if line:
-                if '=' in line and (not line.startswith('python')) :
-                    k, v = line.split('=')
-                    if v[0] == '"' and v[-1] == '"': # example: T="vgg13"
-                        v = v[1:-1]
-                    if '$' in v:
-                        dict[k] = replace_var(v, dict)
-                    else:
-                        dict[k] = v
-                if line.startswith('python'):
-                    new_line = replace_var(line, dict)
-                    jobs.append(new_line)
+            if line == '' or line.startswith('#'):
+                continue
+            if '=' in line and (not line.startswith('python')) :
+                k, v = line.split('=')
+                if v[0] == '"' and v[-1] == '"': # example: T="vgg13"
+                    v = v[1:-1]
+                if '$' in v:
+                    dict[k] = replace_var(v, dict)
+                else:
+                    dict[k] = v
+            if line.startswith('python'):
+                new_line = replace_var(line, dict)
+                jobs.append(new_line)
         return jobs
         
     def get_vacant_GPU(self):
