@@ -72,6 +72,8 @@ class JobManager():
     
     def run(self):
         jobs = self.read_jobs()
+        n_job = len(jobs)
+        n_executed = 0
         for job in jobs:
             while 1:
                 vacant_gpus = self.get_vacant_GPU()
@@ -79,14 +81,16 @@ class JobManager():
                 if len(vacant_gpus) > 0:
                     gpu = vacant_gpus[0]
                     new_script = 'CUDA_VISIBLE_DEVICES=%s nohup %s > /dev/null 2>&1 &' % (gpu, job)
-                    print('[%s] ==> Found vacant GPUs: %s. Run job on GPU %s: "%s"' % (current_time, vacant_gpus, gpu, new_script))
                     os.system(new_script)
+                    n_executed += 1
+                    print('[%s] ==> Found vacant GPUs: %s' % (current_time, ' '.join(vacant_gpus)))
+                    print('[%s] ==> Run job on GPU %s: [%s] %d jobs left.\n' % (current_time, gpu, new_script, n_job - n_executed))
                     time.sleep(10) # wait for 10 seconds so that the GPU is fully activated
                     break
                 else:
-                    print('[%s] ==> Found no vacant GPUs. Wait for another 60 seconds' % current_time)
+                    print('[%s] ==> Found no vacant GPUs. Wait for another 60 seconds. %d jobs left.' % (current_time, n_job - n_executed))
                     time.sleep(60)
-        print('==> All jobs have been executed. Congrats :-)')
+        print('==> All jobs have been executed. Congrats!')
 
 '''Usage: python auto_alloc_jobs.py script.sh
 '''
