@@ -17,6 +17,8 @@ def strdict_to_dict(sstr, ttype):
     return out
 
 def modify_txt(file, old_str1, new_str1, old_str2, new_str2):
+    if not os.path.exists(file):
+        return
     file_data = ""
     with open(file, "r", encoding="utf-8") as f:
         for line in f:
