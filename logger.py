@@ -238,7 +238,7 @@ class Logger(object):
         if hasattr(self.args, 'resume_ExpID') and self.args.resume_ExpID:
             full_path = get_project_path(self.args.resume_ExpID)
             exp_folder_name = os.path.basename(full_path) # exp_folder_name is like "run_SERVER5-20191220-212041"
-            ExpID = exp_folder_name.split("_")[-1]
+            ExpID = exp_folder_name.split("_")[-1] # Note: this depends on the string format. May be risky.
             _, date, hr = ExpID.split("-")
             if not (date.isdigit() and hr.isdigit()):
                 self.log_printer("ExpID format is wrong! Please check.")
@@ -247,10 +247,8 @@ class Logger(object):
             self.SERVER = ''
             TimeID = time.strftime("%Y%m%d-%H%M%S")
             if 'SERVER' in os.environ.keys():
-                ExpID = "SERVER" + os.environ["SERVER"] + "-" + TimeID
                 self.SERVER = os.environ["SERVER"]
-            else:
-                ExpID = TimeID
+            ExpID = 'SERVER' + self.SERVER + '-' + TimeID
         return ExpID
 
     def set_up_dir(self):
