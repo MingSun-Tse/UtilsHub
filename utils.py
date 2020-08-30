@@ -312,6 +312,13 @@ def get_project_path(ExpID):
     assert(len(full_path) == 1) # There should be only ONE folder with <ExpID> in its name.
     return full_path[0]
 
+def parse_ExpID(path):
+    '''parse out the ExpID from 'path', which can be a file or directory.
+    Example: Experiments/AE__ckpt_epoch_240.pth__LR1.5__originallabel__vgg13_SERVER138-20200829-202307/gen_img
+    Example: Experiments/AE__ckpt_epoch_240.pth__LR1.5__originallabel__vgg13_SERVER-20200829-202307/gen_img
+    '''
+    return 'SERVER' + path.split('_SERVER')[1].split('/')[0]
+
 def mkdirs(*paths):
     for p in paths:
         if not os.path.exists(p):
