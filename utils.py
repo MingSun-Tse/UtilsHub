@@ -581,7 +581,10 @@ class Timer():
         left_t = sec_per_epoch * (self.total_epoch - len(interval))
         finish_t = left_t + time.time()
         finish_t = time.strftime('%Y/%m/%d-%H:%M', time.localtime(finish_t))
-        return finish_t + ' (speed: %.2fs per epoch)' % sec_per_epoch
+        return finish_t + ' (speed: %.2fs per timing)' % sec_per_epoch
+    
+    def __call__(self):
+        return(self.predict_finish_time())
 
 class Dataset_npy_batch(Dataset):
     def __init__(self, npy_dir, transform, f='batch.npy'):
