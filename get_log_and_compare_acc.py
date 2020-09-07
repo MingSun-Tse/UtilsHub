@@ -13,7 +13,7 @@ import math
 SERVER = {
     '138': 'wanghuan@155.33.198.138:/home/wanghuan/Projects/{}/Experiments/*-{}/log/log.txt',
     '005': 'wanghuan@155.33.199.5:/home3/wanghuan/Projects/{}/Experiments/*-{}/log/log.txt',
-    '115': 'yulun@155.33.198.115:/media/yulun/12THD1/Huan_Projects/{}/Experiments/*-{}/log/log.txt',
+    '115': 'yulun@155.33.198.115:/media/yulun/12THD1/Huan_Projects/Projects/{}/Experiments/*-{}/log/log.txt',
     '120': 'wang.huan@129.10.0.120:/home/wang.huan/Projects/{}/Experiments/*-{}/log/log.txt',
     '170': 'huan@155.33.198.170:/home/wanghuan/Projects/{}/Experiments/*-{}/log/log.txt',
     '202': 'huwang@137.203.141.202:/homes/huwang/Projects/{}/Experiments/*-{}/log/log.txt',
@@ -74,7 +74,8 @@ for arg in sys.argv[1:]:
     if "-" not in arg:
         window = int(arg)
     else:
-        server, project, log_id = arg.split('-') # arg example: 202-CRD-002234. This means, we want the log on machine 202, project CRD, log_id 002234
+        server, *project, log_id = arg.split('-') # arg example: 202-CRD-002234. This means, we want the log on machine 202, project CRD, log_id 002234
+        project = '-'.join(project)
         server = '%03d' % int(server)
         local_log_files = [x for x in os.listdir('./') if x.startswith('log_') and x.endswith('.txt')]
         
