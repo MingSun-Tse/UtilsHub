@@ -39,12 +39,12 @@ def _make_acc_str(acc_list, num_digit=2):
     '''
     str_format = '%.{}f'.format(num_digit)
     acc_str = [str_format % x for x in acc_list]
-    mean = str_format % np.mean(acc_list)
-    std = str_format % np.std(acc_list)
+    mean = str_format % np.mean(acc_list) if len(acc_list) else 0
+    std = str_format % np.std(acc_list) if len(acc_list) else 0
     output = ', '.join(acc_str) + ' -- %s (%s)' % (mean, std)
     return output
 
-def print_acc_for_one_exp(all_exps, name, epoch=240):
+def print_acc_for_one_exp(all_exps, name, mark):
     '''In <all_exps>, pick those with <name> in their name for accuracy collection.
     '''
     exp_id = []
@@ -57,21 +57,28 @@ def print_acc_for_one_exp(all_exps, name, epoch=240):
             acc_l = -1
             acc_b = -1
             for line in open(log_f, 'r'):
-                if 'Epoch %d (after update)' % epoch in line: # parsing accuracy
+                if '%s' % mark in line: # parsing accuracy
+                    # last accuracy
                     if 'Acc1 =' in line: # previous impel
                         acc_l = _get_value(line, 'Acc1 =', exact_key=True)
                     else:
                         acc_l = _get_value(line, 'Acc1')
+
+                    # best accuray
                     if 'Best Acc1' in line: # previous impel
                         acc_b = _get_value(line, 'Best Acc1', exact_key=True)
                     elif 'Best_Acc1' in line:
-                        acc_b = _get_value(line, 'Best_Acc1')
+                        acc_b = _get_value(line, 'Best_Acc1', exact_key=True)
+                    elif 'Best' in line:
+                        acc_b = _get_value(line, 'Best', exact_key=True)
                     else:
                         raise NotImplementedError
                     break
+
             if acc_b == -1:
-                print('This log is broken, so skip it')
+                print('Not found mark "%s" in the log "%s", skip it' % (mark, log_f))
                 continue
+            
             acc_last.append(acc_l)
             acc_best.append(acc_b)
             _, id = _get_exp_name_id(exp)
@@ -80,9 +87,12 @@ def print_acc_for_one_exp(all_exps, name, epoch=240):
     # example for the exp_str and acc_last_str:
     # 174550, 174554, 174558 (138-CRD)
     # 75.84, 75.63, 75.45 – 75.64 (0.16)
-    exp_str = ', '.join(exp_id) + ' (%s-%s)' % (os.environ['SERVER'], _get_project_name())
-    acc_last_str = _make_acc_str(acc_last)
-    acc_best_str = _make_acc_str(acc_best)
+    exp_str = ', '.join(exp_id) + ' [%s-%s]' % (os.environ['SERVER'], _get_project_name())
+    n_digit = 2 # acc is like 75.64
+    if len(acc_last) and acc_last[0] < 1: # acc is like 0.7564
+        n_digit = 4
+    acc_last_str = _make_acc_str(acc_last, num_digit=n_digit)
+    acc_best_str = _make_acc_str(acc_best, num_digit=n_digit)
     print(exp_str)
     print(acc_last_str)
     print(acc_best_str)
@@ -93,7 +103,7 @@ def main():
         python ../UtilsHub/collect_experimental_results.py 20200731-18
     '''
     kw = sys.argv[1]
-    epoch = int(sys.argv[2])
+    mark = sys.argv[2] # 'Epoch 240' or 'Step 11200', which is used to pin down the line that prints the best accuracy
     all_exps = glob.glob('Experiments/*%s*' % kw)
     all_exps.sort()
     
@@ -107,7 +117,7 @@ def main():
     # analyze each independent exp
     for name in independent_exps:
         print('[%s]' % name)
-        print_acc_for_one_exp(all_exps, name + '_SERVER', epoch)
+        print_acc_for_one_exp(all_exps, name + '_SERVER', mark)
         print('')
 
 if __name__ == '__main__':

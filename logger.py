@@ -124,7 +124,8 @@ class LogTracker(object):
                 else: # [[1, xx], [2, yy], ...]
                     v = "%.4f" % v[-1][1]
             
-            format_str = "{:<%d}" % (max(len(k), len(v)))
+            length = min(max(len(k), len(v)), 15)
+            format_str = "{:<%d}" % (length)
             k_str.append(format_str.format(k))
             v_str.append(format_str.format(v))
         k_str = " | ".join(k_str)
