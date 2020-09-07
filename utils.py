@@ -579,7 +579,7 @@ class Timer():
     def predict_finish_time(self, ave_window=3):
         self.time_stamp.append(time.time()) # update time stamp
         if len(self.time_stamp) == 1:
-            return 'Only one time stamp, not enough to predict the future'
+            return 'only one time stamp, not enough to predict'
         interval = []
         for i in range(len(self.time_stamp) - 1):
             t = self.time_stamp[i + 1] - self.time_stamp[i]
