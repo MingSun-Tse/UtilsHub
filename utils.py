@@ -408,13 +408,13 @@ def smart_weights_load(net, w_path, key=None):
                 state_dict = loaded['model']
     
     # remove the "module." surfix if using DataParallel before
-    new_state_dict = OrderedDict()
-    for k, v in state_dict.items():
-        param_name = k.split("module.")[-1]
-        new_state_dict[param_name] = v
+    # new_state_dict = copy.deepcopy(state_dict)
+    # for k, v in state_dict.items():
+    #     param_name = k.split("module.")[-1]
+    #     new_state_dict[param_name] = v
     
-    # load state_dict into net
-    net.load_state_dict(new_state_dict)
+    # net and state_dict have exactly the same architecture (layer names etc. are exactly same)
+    net.load_state_dict(state_dict)
 
     # for name, m in net.named_modules():
     #     module_name = name.split("module.")[-1]
