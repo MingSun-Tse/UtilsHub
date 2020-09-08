@@ -87,7 +87,7 @@ def print_acc_for_one_exp(all_exps, name, mark):
     # example for the exp_str and acc_last_str:
     # 174550, 174554, 174558 (138-CRD)
     # 75.84, 75.63, 75.45 – 75.64 (0.16)
-    exp_str = ', '.join(exp_id) + ' [%s-%s]' % (os.environ['SERVER'], _get_project_name())
+    exp_str = '[%s-%s]\n' % (os.environ['SERVER'], _get_project_name()) + ', '.join(exp_id)
     n_digit = 2 # acc is like 75.64
     if len(acc_last) and acc_last[0] < 1: # acc is like 0.7564
         n_digit = 4
