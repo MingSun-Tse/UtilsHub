@@ -15,6 +15,7 @@ except:
     from uutils import get_project_path, mkdirs # sometimes, there is a name conflict for 'utils' then we will use 'uutils'
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from collections import OrderedDict
+import json
 pjoin = os.path.join
 
 # globals
@@ -211,8 +212,9 @@ class Logger(object):
             self.__send_to_exp_hub() 
         args.CodeID = self.get_CodeID()
         self.log_printer.print_args(args)
+        self.save_args(args)
         self.cache_model()
-        self.n_log_item = 0 
+        self.n_log_item = 0
 
     def get_CodeID(self):
         if hasattr(self.args, 'CodeID') and self.args.CodeID:
@@ -342,3 +344,7 @@ class Logger(object):
         script_push = 'scp %s %s' % (local_f, today_remote)
         os.system(script_push)
         os.remove(local_f)
+    
+    def save_args(self, args):
+        with open(pjoin(self.log_path, 'params.json'), 'w') as f:
+            json.dump(args.__dict__, f, indent=4)
