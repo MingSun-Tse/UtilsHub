@@ -15,6 +15,7 @@ from collections import OrderedDict
 import copy
 import glob
 from PIL import Image
+import json
 
 def _weights_init(m):
     if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
@@ -163,17 +164,12 @@ class PresetLRScheduler(object):
                 break
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
-                    
-        # for param_group in optimizer.param_groups:
-        #     current_lr = param_group['lr']
-        #     new_lr = self.decay_schedule.get(iteration, current_lr)
-        #     param_group['lr'] = new_lr
+        return lr
 
-    @staticmethod
-    def get_lr(optimizer):
-        for param_group in optimizer.param_groups:
-            lr = param_group['lr']
-            return lr
+def get_lr(optimizer):
+    for param_group in optimizer.param_groups:
+        lr = param_group['lr']
+        return lr
 
 def plot_weights_heatmap(weights, out_path):
     '''
@@ -605,3 +601,14 @@ class Dataset_npy_batch(Dataset):
         return img.squeeze(0), label
     def __len__(self):
         return len(self.data)
+
+def merge_args(args, params_json):
+    '''<args> is from argparser. <params_json> is a json file.
+    merge them, if there is collision, the param in <args> has higher priority.
+    '''
+    with open(args.params_json) as f:
+        params = json.load(f)
+    for k, v in params.items():
+        if k not in args.__dict__:
+            args.__dict__[k] = v
+    return args
