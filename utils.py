@@ -149,13 +149,14 @@ class PresetLRScheduler(object):
     def __init__(self, decay_schedule):
         # decay_schedule is a dictionary
         # which is for specifying iteration -> lr
-        self.decay_schedule = decay_schedule # a dict, example: {0:0.001, 30:0.00001, 45:0.000001}
+        self.decay_schedule = {}
+        for k, v in decay_schedule.items(): # a dict, example: {"0":0.001, "30":0.00001, "45":0.000001}
+            self.decay_schedule[int(k)] = v
         print('Using a preset learning rate schedule:')
-        pprint(decay_schedule)
+        print(self.decay_schedule)
 
     def __call__(self, optimizer, e):
         epochs = list(self.decay_schedule.keys())
-        assert type(epochs[0]) == int
         epochs = sorted(epochs) # example: [0, 30, 45]
         lr = self.decay_schedule[epochs[-1]]
         for i in range(len(epochs) - 1):
@@ -606,9 +607,8 @@ def merge_args(args, params_json):
     '''<args> is from argparser. <params_json> is a json file.
     merge them, if there is collision, the param in <args> has higher priority.
     '''
-    with open(args.params_json) as f:
+    with open(params_json) as f:
         params = json.load(f)
     for k, v in params.items():
-        if k not in args.__dict__:
-            args.__dict__[k] = v
+        args.__dict__[k] = v
     return args
