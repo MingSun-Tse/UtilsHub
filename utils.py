@@ -16,6 +16,7 @@ import copy
 import glob
 from PIL import Image
 import json
+import pandas as pd
 
 def _weights_init(m):
     if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
@@ -612,3 +613,26 @@ def merge_args(args, params_json):
     for k, v in params.items():
         args.__dict__[k] = v
     return args
+
+class AccuracyManager():
+    def __init__(self):
+        self.accuracy = pd.DataFrame()
+    
+    def update(self, time, acc1, acc5=None):
+        acc = pd.DataFrame([[time, acc1, acc5]], columns=['time', 'acc1', 'acc5']) # time can be epoch or step
+        self.accuracy = self.accuracy.append(acc, ignore_index=True)
+    
+    def get_best_acc(self, criterion='acc1'):
+        assert criterion in ['acc1', 'acc5']
+        acc = self.accuracy.sort_values(by=criterion) # ascending sort
+        best = acc.iloc[-1] # the last row
+        time, acc1, acc5 = best.time, best.acc1, best.acc5
+        return time, acc1, acc5
+    
+    def get_last_acc(self):
+        last = self.accuracy.iloc[-1]
+        time, acc1, acc5 = last.time, last.acc1, last.acc5
+        return time, acc1, acc5
+
+
+    
