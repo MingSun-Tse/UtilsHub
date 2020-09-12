@@ -16,6 +16,7 @@ import copy
 import glob
 from PIL import Image
 import json
+import yaml
 import pandas as pd
 
 def _weights_init(m):
@@ -605,11 +606,16 @@ class Dataset_npy_batch(Dataset):
         return len(self.data)
 
 def merge_args(args, params_json):
-    '''<args> is from argparser. <params_json> is a json file.
-    merge them, if there is collision, the param in <args> has higher priority.
+    '''<args> is from argparser. <params_json> is a json/yaml file.
+    merge them, if there is collision, the param in <params_json> has a higher priority.
     '''
     with open(params_json) as f:
-        params = json.load(f)
+        if params_json.endswith('.json'):
+            params = json.load(f)
+        elif params_json.endswith('.yaml'):
+            params = yaml.load(f, Loader=yaml.FullLoader)
+        else:
+            raise NotImplementedError
     for k, v in params.items():
         args.__dict__[k] = v
     return args
