@@ -311,7 +311,7 @@ class Logger(object):
             if "Experiments" in root or "Debug_Dir" in root:
                 continue
             for f in files:
-                if f.endswith(".py") or f.endswith(".json"):
+                if f.endswith(".py") or f.endswith(".json") or f.endswith('yaml'):
                     dir_path = pjoin(self.cache_path, root)
                     f_path = pjoin(root, f)
                     if not os.path.exists(dir_path):
