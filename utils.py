@@ -384,51 +384,71 @@ def feat_visualize(ax, feat, label):
         ax.scatter(x[0], x[1], color=colors[y], marker=".")
     return ax
 
-def smart_weights_load(net, w_path, key=None):
+def smart_weights_load(net, w_path, key=None, load_mode='exact'):
     '''
         This func is to load the weights of <w_path> into <net>.
     '''
-    loaded = torch.load(w_path, map_location=lambda storage, location: storage)
+    common_weights_keys = ['T', 'S', 'G', 'model', 'state_dict']
+
+    ckpt = torch.load(w_path, map_location=lambda storage, location: storage)
     
     # get state_dict
-    if isinstance(loaded, OrderedDict):
-        state_dict = loaded
+    if isinstance(ckpt, OrderedDict):
+        state_dict = ckpt
     else:
         if key:
-            state_dict = loaded[key]
+            state_dict = ckpt[key]
         else:
-            if "T" in loaded.keys():
-                state_dict = loaded["T"]
-            elif "S" in loaded.keys():
-                state_dict =  loaded["S"]
-            elif "G" in loaded.keys():
-                state_dict = loaded["G"]
-            elif 'model' in loaded.keys():
-                state_dict = loaded['model']
-    
-    # remove the "module." surfix if using DataParallel before
-    # new_state_dict = copy.deepcopy(state_dict)
-    # for k, v in state_dict.items():
-    #     param_name = k.split("module.")[-1]
-    #     new_state_dict[param_name] = v
-    
-    # net and state_dict have exactly the same architecture (layer names etc. are exactly same)
-    net.load_state_dict(state_dict)
+            intersection = [k for k in ckpt.keys() if k in common_weights_keys]
+            if len(intersection) == 1:
+                k = intersection[0]
+                state_dict = ckpt[k]
+            else:
+                print('Error: multiple model keys found in ckpt: %s. Please explicitly appoint one' % intersection)
+                exit(1)
 
-    # for name, m in net.named_modules():
-    #     module_name = name.split("module.")[-1]
-    #     # match and load
-    #     matched_param_name = ""
-    #     for k in keys_ckpt:
-    #       if module_name in k:
-    #         matched_param_name = k
-    #         break
-    #     if matched_param_name:
-    #         m.weight.copy_(w[matched_param_name])
-    #         print("target param name: '%s' <- '%s' (ckpt param name)" % (name, matched_param_name))
-    #     else:
-    #         print("Error: cannot find matched param in the loaded weights. please check manually.")
-    #         exit(1)
+    if load_mode == 'exact': # net and state_dict have exactly the same architecture (layer names etc. are exactly same)
+        try:
+            net.load_state_dict(state_dict)
+        except:
+            ckpt_data_parallel = False
+            for k, v in state_dict.items():
+                if k.startswith('module.'):
+                    ckpt_data_parallel = True # DataParallel was used in the ckpt
+                    break
+            
+            if ckpt_data_parallel:
+                # If ckpt used DataParallel, then the reason of the load failure above should be that the <net> does not use 
+                # DataParallel. Therefore, remove the surfix 'module.' in ckpt.
+                new_state_dict = OrderedDict()
+                for k, v in state_dict.items():
+                    param_name = k.split("module.")[-1]
+                    new_state_dict[param_name] = v
+            else:
+                # Similarly, if ckpt didn't use DataParallel, here we add the surfix 'module.'.
+                new_state_dict = OrderedDict()
+                for k, v in state_dict.items():
+                    param_name = 'module.' + k
+                    new_state_dict[param_name] = v
+            net.load_state_dict(new_state_dict)
+
+    else:
+    # Here is the case that <net> and ckpt only have part of weights in common. Then load them by module name:
+    # for every named module in <net>, if ckpt has a module of the same name, then they are matched and weights are loaded from ckpt to <net>.
+        for name, m in net.named_modules():
+            module_name = name.split("module.")[-1] # remove 'module.' if any
+            # match and load
+            matched_param_name = ''
+            for k in ckpt.keys():
+                if module_name in k:
+                    matched_param_name = k
+                    break
+                if matched_param_name:
+                    m.weight.copy_(ckpt[matched_param_name])
+                    print("net module name: '%s' <- '%s' (ckpt module name)" % (name, matched_param_name))
+                else:
+                    print("Error: cannot find matched module in ckpt for module '%s' in net. Please check manually." % name)
+                    exit(1)
     
 class AccuracyAnalyzer():
     def __init__(self):
