@@ -202,6 +202,8 @@ def strlist_to_list(sstr, ttype):
         # self.args.skip_layers = ['1.0', '2.0', '2.3', '3.0', '3.5', ]
         turn these into a list of <ttype> (float or str or int etc.)
     '''
+    if not sstr:
+        return sstr
     out = []
     sstr = sstr.split("[")[1].split("]")[0]
     for x in sstr.split(','):
@@ -215,6 +217,8 @@ def strdict_to_dict(sstr, ttype):
     '''
         '{"1": 0.04, "2": 0.04, "4": 0.03, "5": 0.02, "7": 0.03, }'
     '''
+    if not sstr:
+        return sstr
     out = {}
     sstr = sstr.split("{")[1].split("}")[0]
     for x in sstr.split(','):
