@@ -249,7 +249,7 @@ def parse_prune_ratio_vgg(sstr):
             begin = int(k.split('-')[0].strip())
             end = int(k.split('-')[1].strip())
             out[begin : end+1] = float(v)
-    return out
+    return list(out)
 
 
 def kronecker(A, B):
