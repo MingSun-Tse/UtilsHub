@@ -15,7 +15,7 @@ except:
     from uutils import get_project_path, mkdirs # sometimes, there is a name conflict for 'utils' then we will use 'uutils'
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from collections import OrderedDict
-import json
+import json, yaml
 pjoin = os.path.join
 
 # globals
@@ -348,3 +348,7 @@ class Logger(object):
     def save_args(self, args):
         with open(pjoin(self.log_path, 'params.json'), 'w') as f:
             json.dump(args.__dict__, f, indent=4)
+        with open(pjoin(self.log_path, 'params.yaml'), 'w') as f:
+            yaml.dump(args.__dict__, f, indent=4)
+
+        
