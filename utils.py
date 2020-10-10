@@ -392,7 +392,7 @@ def smart_weights_load(net, w_path, key=None, load_mode='exact'):
     '''
         This func is to load the weights of <w_path> into <net>.
     '''
-    common_weights_keys = ['T', 'S', 'G', 'model', 'state_dict']
+    common_weights_keys = ['T', 'S', 'G', 'model', 'state_dict', 'state_dict_t']
 
     ckpt = torch.load(w_path, map_location=lambda storage, location: storage)
     
@@ -408,7 +408,7 @@ def smart_weights_load(net, w_path, key=None, load_mode='exact'):
                 k = intersection[0]
                 state_dict = ckpt[k]
             else:
-                print('Error: multiple model keys found in ckpt: %s. Please explicitly appoint one' % intersection)
+                print('Error: multiple or no model keys found in ckpt: %s. Please explicitly appoint one' % intersection)
                 exit(1)
 
     if load_mode == 'exact': # net and state_dict have exactly the same architecture (layer names etc. are exactly same)
