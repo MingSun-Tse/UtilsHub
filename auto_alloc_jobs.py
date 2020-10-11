@@ -57,18 +57,27 @@ class JobManager():
         return jobs
         
     def get_vacant_GPU(self):
-        f = 'wh_GPU_status_%s.tmp' % time.time()
-        os.system('nvidia-smi >> %s' % f)
-        lines = open(f).readlines()
-        os.remove(f)
         vacant_gpus = []
-        for i in range(len(lines)) :
-            line = lines[i]
-            if 'MiB /' in line: # example: | 41%   31C    P8     4W / 260W |      1MiB / 11019MiB |      0%      Default |
-                volatile = float(line.split()[12].split('%')[0]) / 100.
-                if volatile < 0.05: # now this is the only condition to determine if a GPU is used or not. May be improved.
-                    gpu_id = lines[i - 1].split()[1] # example: |   1  GeForce RTX 208...  Off  | 00000000:02:00.0 Off |                  N/A |
-                    vacant_gpus.append(gpu_id)
+        get_gpu_successully = False
+        while not get_gpu_successully:
+            f = 'wh_GPU_status_%s.tmp' % time.time()
+            os.system('nvidia-smi >> %s' % f)
+            lines = open(f).readlines()
+            os.remove(f)
+            get_gpu_successully = True
+            for i in range(len(lines)) :
+                line = lines[i]
+                if 'MiB /' in line: # example: | 41%   31C    P8     4W / 260W |      1MiB / 11019MiB |      76%      Default |
+                    volatile = line.split()[12].split('%')[0]
+                    if volatile.isdigit():
+                        volatile = float(volatile) / 100.
+                        if volatile < 0.05: # now this is the only condition to determine if a GPU is used or not. May be improved.
+                            gpu_id = lines[i - 1].split()[1] # example: |   1  GeForce RTX 208...  Off  | 00000000:02:00.0 Off |                  N/A |
+                            vacant_gpus.append(gpu_id)
+                    else: # the log may be broken, access it again
+                        get_gpu_successully = False
+                        print('Trying to get vacant GPUs: nvidia-smi log may be broken, access it agian')
+                        break
         return vacant_gpus
     
     def run(self):
