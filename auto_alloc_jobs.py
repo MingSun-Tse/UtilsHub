@@ -56,7 +56,7 @@ class JobManager():
                 jobs.append(new_line)
         return jobs
         
-    def get_vacant_GPU(self):
+    def get_vacant_GPU_once(self):
         vacant_gpus = []
         get_gpu_successully = False
         while not get_gpu_successully:
@@ -68,16 +68,26 @@ class JobManager():
             for i in range(len(lines)) :
                 line = lines[i]
                 if 'MiB /' in line: # example: | 41%   31C    P8     4W / 260W |      1MiB / 11019MiB |      76%      Default |
-                    volatile = line.split()[12].split('%')[0]
+                    volatile = line.split('%')[-2].split()[-1]
                     if volatile.isdigit():
                         volatile = float(volatile) / 100.
                         if volatile < 0.05: # now this is the only condition to determine if a GPU is used or not. May be improved.
                             gpu_id = lines[i - 1].split()[1] # example: |   1  GeForce RTX 208...  Off  | 00000000:02:00.0 Off |                  N/A |
                             vacant_gpus.append(gpu_id)
                     else: # the log may be broken, access it again
+                        print(line)
                         get_gpu_successully = False
                         print('Trying to get vacant GPUs: nvidia-smi log may be broken, access it agian')
                         break
+        return vacant_gpus
+    
+    def get_vacant_GPU(self):
+        '''run 3 times to get a stable result
+        '''
+        vacant_gpus_1 = self.get_vacant_GPU_once()
+        vacant_gpus_2 = self.get_vacant_GPU_once()
+        vacant_gpus_3 = self.get_vacant_GPU_once()
+        vacant_gpus = [x for x in vacant_gpus_1 if x in vacant_gpus_2 and x in vacant_gpus_3]
         return vacant_gpus
     
     def run(self):
