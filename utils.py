@@ -278,6 +278,7 @@ def test(net, test_loader):
     n_example_test = 0
     total_correct = 0
     avg_loss = 0
+    is_train = net.training
     net.eval()
     with torch.no_grad():
         pred_total = []
@@ -305,9 +306,12 @@ def test(net, test_loader):
         cnt_test[l] += 1
     acc_per_class = []
     for c in range(n_class):
-        acc_test[c] /= float(cnt_test[c])
+        acc_test[c] = 0 if cnt_test[c] == 0 else acc_test[c] / float(cnt_test[c])
         acc_per_class.append(acc_test[c])
-
+    
+    # return to the train state if necessary
+    if is_train:
+        net.train() 
     return acc, avg_loss.item(), acc_per_class
 
 def get_project_path(ExpID):
