@@ -407,7 +407,7 @@ def smart_weights_load(net, w_path, key=None, load_mode='exact'):
         if key:
             state_dict = ckpt[key]
         else:
-            intersection = [k for k in ckpt.keys() if k in common_weights_keys]
+            intersection = [k for k in ckpt.keys() if k in common_weights_keys and isinstance(ckpt[k], OrderedDict)]
             if len(intersection) == 1:
                 k = intersection[0]
                 state_dict = ckpt[k]
