@@ -74,15 +74,23 @@ def parse_acc(line):
         raise NotImplementedError
     return acc_l, acc_b
 
-def parse_epoch(line): # TODO
-    epoch = 1
+# line example: Acc1 71.1200 Acc5 90.3800 Epoch 840 (after update) lr 5.0000000000000016e-05 (Best_Acc1 71.3500 @ Epoch 817)
+def parse_time(line): # TODO
+    if 'Epoch' in line:
+        epoch = line.split('Epoch')[1].split()[0]
+        epoch = int(epoch)
+    elif 'Step' in line:
+        raise NotImplementedError
+    else:
+        raise NotImplementedError
     return epoch
 
 def print_acc_for_one_exp(all_exps, name, mark, present_data):
     '''In <all_exps>, pick those with <name> in their name for accuracy collection.
+    <name> is to locate which experiments; <mark> is to locate the accuracy line in a log.
     '''
     exp_id = []
-    acc_last, acc_best = [], []
+    acc_last, acc_best, acc_time = [], [], []
     for exp in all_exps:
         if name in exp:
             log_f = '%s/log/log.txt' % exp
@@ -92,13 +100,14 @@ def print_acc_for_one_exp(all_exps, name, mark, present_data):
                 for k in range(1, len(lines) + 1):
                     if is_acc_line(lines[-k]):
                         acc_l, acc_b = parse_acc(lines[-k])
-                        epoch = parse_epoch(lines[-k]) # TODO: add epoch check
+                        time = parse_time(lines[-k])
                         break
             
             else: # mark is like "Epoch 240 (", which explicitly points out which epoch or step
                 for line in open(log_f, 'r'):
                     if is_acc_line(line) and mark in line:
                         acc_l, acc_b = parse_acc(line)
+                        time = parse_time(lines[-k])
                         break
 
             if acc_b == -1:
@@ -107,6 +116,7 @@ def print_acc_for_one_exp(all_exps, name, mark, present_data):
             
             acc_last.append(acc_l)
             acc_best.append(acc_b)
+            acc_time.append(time)
             _, id = _get_exp_name_id(exp)
             exp_id.append(id)
 
@@ -122,6 +132,8 @@ def print_acc_for_one_exp(all_exps, name, mark, present_data):
     print(exp_str)
     print(acc_last_str)
     print(acc_best_str)
+    if np.max(acc_time) != np.min(acc_time):
+        print('==> Warning! Time of these accuracies is different: %s' % acc_time)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--kw', type=str, required=True) # to select experiment
