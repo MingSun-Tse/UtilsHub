@@ -156,9 +156,9 @@ def main():
             independent_exps.append(name)
     
     # analyze each independent exp
-    for name in independent_exps:
-        print('[%s]' % name)
-        print_acc_for_one_exp(all_exps, name + '_SERVER', args.mark, args.present_data)
+    for exp_name in independent_exps:
+        print('[%s]' % exp_name)
+        print_acc_for_one_exp(all_exps, 'Experiments/%s_SERVER' % exp_name, args.mark, args.present_data)
         print('')
 
 if __name__ == '__main__':
