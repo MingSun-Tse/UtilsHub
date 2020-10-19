@@ -306,12 +306,14 @@ class Logger(object):
         '''
             Save the modle architecture, loss, configs, in case of future check.
         '''
+        extensions = ['.py', '.json', '.yaml', '.sh'] # files of these types will be cached
         self.log_printer("==> caching various config files to '%s'" % self.cache_path)
         for root, dirs, files in os.walk("."):
             if "Experiments" in root or "Debug_Dir" in root:
                 continue
             for f in files:
-                if f.endswith(".py") or f.endswith(".json") or f.endswith('yaml'):
+                _, ext = os.path.splitext(f)
+                if ext in extensions:
                     dir_path = pjoin(self.cache_path, root)
                     f_path = pjoin(root, f)
                     if not os.path.exists(dir_path):
