@@ -30,13 +30,19 @@ def _weights_init(m):
             m.bias.data.zero_()
 
 # refer to: https://github.com/Eric-mingjie/rethinking-network-pruning/blob/master/imagenet/l1-norm-pruning/compute_flops.py
-def get_n_params(model=None):
-    if model == None:
-        model = torchvision.models.alexnet()
+def get_n_params(model):
     total = sum([param.nelement() if param.requires_grad else 0 for param in model.parameters()])
     total /= 1e6
-    # print('  Number of params: %.4fM' % total)
     return total
+
+def get_n_params_(model):
+    n_params = 0
+    for _, module in model.named_modules():
+        if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear): # only consider Conv2d and Linear, no BN
+            n_params += module.weight.numel()
+            if hasattr(module, 'bias') and type(module.bias) != type(None):
+                n_params += module.bias.numel()
+    return n_params
 
 def get_n_flops(model=None, input_res=224, multiply_adds=True):
     model = copy.deepcopy(model)
