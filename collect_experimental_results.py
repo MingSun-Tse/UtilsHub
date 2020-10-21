@@ -57,6 +57,8 @@ def is_acc_line(line):
     else:
         return False
 
+# acc line example: Acc1 71.1200 Acc5 90.3800 Epoch 840 (after update) lr 5.0000000000000016e-05 (Best_Acc1 71.3500 @ Epoch 817)
+# acc line example: Acc1 0.9195 @ Step 46600 (Best = 0.9208 @ Step 38200) lr 0.0001
 def parse_acc(line):
     # last accuracy
     if 'Acc1 =' in line: # previous impel
@@ -68,22 +70,23 @@ def parse_acc(line):
         acc_b = _get_value(line, 'Best Acc1', exact_key=True)
     elif 'Best_Acc1' in line:
         acc_b = _get_value(line, 'Best_Acc1', exact_key=True)
+    elif 'Best =' in line:
+        acc_b = _get_value(line, 'Best =', exact_key=True)
     elif 'Best' in line:
         acc_b = _get_value(line, 'Best', exact_key=True)
     else:
         raise NotImplementedError
     return acc_l, acc_b
 
-# line example: Acc1 71.1200 Acc5 90.3800 Epoch 840 (after update) lr 5.0000000000000016e-05 (Best_Acc1 71.3500 @ Epoch 817)
 def parse_time(line): # TODO
     if 'Epoch' in line:
         epoch = line.split('Epoch')[1].split()[0]
-        epoch = int(epoch)
+        time = int(epoch)
     elif 'Step' in line:
-        raise NotImplementedError
+        time = _get_value(line, 'Step', type_func=int, exact_key=True)
     else:
         raise NotImplementedError
-    return epoch
+    return time
 
 def print_acc_for_one_exp(all_exps, name, mark, present_data):
     '''In <all_exps>, pick those with <name> in their name for accuracy collection.
