@@ -137,7 +137,7 @@ def print_acc_for_one_exp(all_exps, name, mark, present_data):
         n_digit = 4
     if len(acc_last) == 1: # only one result
         acc_str = _make_acc_str_one_exp(acc_last[0], acc_best[0], num_digit=n_digit)
-        print(exp_str, acc_str)
+        print(exp_str + ' -- ' + acc_str)
     else:
         acc_last_str = _make_acc_str(acc_last, num_digit=n_digit, present='last' in present_data)
         acc_best_str = _make_acc_str(acc_best, num_digit=n_digit, present='best' in present_data)
