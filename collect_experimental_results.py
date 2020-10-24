@@ -43,9 +43,14 @@ def _make_acc_str(acc_list, num_digit=2, present=False):
     mean = str_format % np.mean(acc_list) if len(acc_list) else 0
     std = str_format % np.std(acc_list) if len(acc_list) else 0
     if present:
-        output = '%s (%s)' % (mean, std) # only print mean and std
+        output = '%s (%s)' % (mean, std) # only print mean and std: 75.64 (0.16)
     else:
-        output = ', '.join(acc_str) + ' -- %s (%s)' % (mean, std) # print the result of every experiment
+        output = ', '.join(acc_str) + ' -- %s (%s)' % (mean, std) # print the result of every experiment: 75.84, 75.63, 75.45 -- 75.64 (0.16)
+    return output
+
+def _make_acc_str_one_exp(acc_last, acc_best, num_digit):
+    str_format = '%.{}f'.format(num_digit)
+    output = '%s/%s' % (str_format % acc_last, str_format % acc_best)
     return output
 
 def is_acc_line(line):
@@ -130,13 +135,17 @@ def print_acc_for_one_exp(all_exps, name, mark, present_data):
     n_digit = 2 # acc is like 75.64
     if len(acc_last) and acc_last[0] < 1: # acc is like 0.7564
         n_digit = 4
-    acc_last_str = _make_acc_str(acc_last, num_digit=n_digit, present='last' in present_data)
-    acc_best_str = _make_acc_str(acc_best, num_digit=n_digit, present='best' in present_data)
-    print(exp_str)
-    print(acc_last_str)
-    print(acc_best_str)
-    if np.max(acc_time) != np.min(acc_time):
-        print('==> Warning! Time of these accuracies is different: %s' % acc_time)
+    if len(acc_last) == 1: # only one result
+        acc_str = _make_acc_str_one_exp(acc_last[0], acc_best[0], num_digit=n_digit)
+        print(exp_str, acc_str)
+    else:
+        acc_last_str = _make_acc_str(acc_last, num_digit=n_digit, present='last' in present_data)
+        acc_best_str = _make_acc_str(acc_best, num_digit=n_digit, present='best' in present_data)
+        print(exp_str)
+        print(acc_last_str)
+        print(acc_best_str)
+        if np.max(acc_time) != np.min(acc_time):
+            print('==> Warning! Time of these accuracies is different: %s' % acc_time)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--kw', type=str, required=True) # to select experiment
