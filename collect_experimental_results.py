@@ -93,12 +93,19 @@ def parse_time(line): # TODO
         raise NotImplementedError
     return time
 
+def parse_finish_time(log_f):
+    lines = open(log_f, 'r').readlines()
+    for k in range(1, 1000):
+        if 'predicted finish time' in lines[-k].lower():
+            finish_time = lines[-k].split('time:')[1].split('(')[0].strip() # example: predicted finish time: 2020/10/25-08:21 (speed: 314.98s per timing)
+            return finish_time[5:] # example: 10/25-08:21
+
 def print_acc_for_one_exp(all_exps, name, mark, present_data):
     '''In <all_exps>, pick those with <name> in their name for accuracy collection.
     <name> is to locate which experiments; <mark> is to locate the accuracy line in a log.
     '''
     exp_id = []
-    acc_last, acc_best, acc_time = [], [], []
+    acc_last, acc_best, acc_time, finish_time = [], [], [], []
     for exp in all_exps:
         if name in exp:
             log_f = '%s/log/log.txt' % exp
@@ -127,25 +134,33 @@ def print_acc_for_one_exp(all_exps, name, mark, present_data):
             acc_time.append(time)
             _, id = _get_exp_name_id(exp)
             exp_id.append(id)
-
-    # example for the exp_str and acc_last_str:
-    # 174550, 174554, 174558 (138-CRD)
-    # 75.84, 75.63, 75.45 – 75.64 (0.16)
-    exp_str = '[%s-%s] ' % (os.environ['SERVER'], _get_project_name()) + ', '.join(exp_id)
+            finish_t = parse_finish_time(log_f)
+            finish_time.append(finish_t)
+            
+    # print
+    exp_str = '[%s-%s] ' % (os.environ['SERVER'], _get_project_name()) + ', '.join(exp_id) # [138-CRD] 174550, 174554, 174558
     n_digit = 2 # acc is like 75.64
     if len(acc_last) and acc_last[0] < 1: # acc is like 0.7564
         n_digit = 4
+    
     if len(acc_last) == 1: # only one result
         acc_str = _make_acc_str_one_exp(acc_last[0], acc_best[0], num_digit=n_digit)
-        print(exp_str + ' -- ' + acc_str)
+        print(exp_str + ' -- ' + acc_str) # [115-CCL] 225022 -- 0.1926/0.4944 
+        print('finish_time: %s' % finish_time[0])
+        print('acc_time: %s' % acc_time[0])
+        
     else:
-        acc_last_str = _make_acc_str(acc_last, num_digit=n_digit, present='last' in present_data)
+        acc_last_str = _make_acc_str(acc_last, num_digit=n_digit, present='last' in present_data) # 75.84, 75.63, 75.45 – 75.64 (0.16)
         acc_best_str = _make_acc_str(acc_best, num_digit=n_digit, present='best' in present_data)
         print(exp_str)
         print(acc_last_str)
         print(acc_best_str)
+        print(finish_time)
+        print('acc_time: %s' % acc_time)
         if np.max(acc_time) != np.min(acc_time):
             print('==> Warning! Time of these accuracies is different: %s' % acc_time)
+
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--kw', type=str, required=True) # to select experiment
