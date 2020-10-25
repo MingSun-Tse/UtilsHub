@@ -51,7 +51,10 @@ class JobManager():
                     dict[k] = replace_var(v, dict)
                 else:
                     dict[k] = v
-            if line.startswith('python'):
+            
+            # collect jobs
+            if line.startswith('python') or line.startswith('sh'):
+                print('Got a job: "%s", append it to the pool' % line)
                 new_line = replace_var(line, dict)
                 jobs.append(new_line)
         return jobs
