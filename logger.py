@@ -238,6 +238,11 @@ class Logger(object):
             return x[:8]
 
     def get_ExpID(self):
+        # get server ID
+        self.SERVER = ''
+        if 'SERVER' in os.environ.keys():
+            self.SERVER = os.environ["SERVER"]
+        
         if hasattr(self.args, 'resume_ExpID') and self.args.resume_ExpID:
             full_path = get_project_path(self.args.resume_ExpID)
             exp_folder_name = os.path.basename(full_path) # exp_folder_name is like "run_SERVER5-20191220-212041"
@@ -247,10 +252,7 @@ class Logger(object):
                 self.log_printer("ExpID format is wrong! Please check.")
                 exit(1)
         else:
-            self.SERVER = ''
             TimeID = time.strftime("%Y%m%d-%H%M%S")
-            if 'SERVER' in os.environ.keys():
-                self.SERVER = os.environ["SERVER"]
             ExpID = 'SERVER' + self.SERVER + '-' + TimeID
         return ExpID
 
