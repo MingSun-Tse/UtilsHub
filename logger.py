@@ -53,18 +53,24 @@ class LogPrinter(object):
     
     def print_args(self, args):
         '''
-            Example: [('batch_size', 16) ('decoder', models/small16x_ae_base/d5_base.pth)]
+            Example: ('batch_size', 16) ('CodeID', 12defsd2) ('decoder', models/small16x_ae_base/d5_base.pth)
+            It will sort the arg keys in alphabeta order, ignoring the upper/lower difference.
         '''
-        logtmp = "["
+        # build a key map for later sorting
         key_map = {}
         for k in args.__dict__:
-            key_map[k.lower()] = k
-            argdict = [x.lower() for x in args.__dict__]
-        for k_ in sorted(argdict):
-            k = key_map[k_]
-            logtmp += "('%s', %s) "% (k, args.__dict__[k])
-        logtmp = logtmp[:-1] + "]"
-        self.__call__(logtmp)
+            k_lower = k.lower()
+            if k_lower in key_map:
+                key_map[k_lower + '_' + k_lower] = k
+            else:
+                key_map[k_lower] = k
+        
+        # print in the order of sorted lower keys 
+        logtmp = ''
+        for k_ in sorted(key_map.keys()):
+            real_key = key_map[k_]
+            logtmp += "('%s', %s) "% (real_key, args.__dict__[real_key])
+        self.__call__(logtmp[:-1]) # the last one is blank
 
 class LogTracker(object):
     def __init__(self, momentum=0.9):
