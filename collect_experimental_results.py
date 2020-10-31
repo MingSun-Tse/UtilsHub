@@ -53,23 +53,25 @@ def _make_acc_str_one_exp(acc_last, acc_best, num_digit):
     output = '%s/%s' % (str_format % acc_last, str_format % acc_best)
     return output
 
-def is_acc_line(line):
-    '''This function determines if a line is an accuracy line. Of cource the accuracy line should meet some 
-    format features which @mingsun-tse used. So if these format features are changed, this func may not work.
-    '''
-    if "Acc" in line and "Best" in line and '@' in line:
-        return True
-    else:
-        return False
-
 # acc line example: Acc1 71.1200 Acc5 90.3800 Epoch 840 (after update) lr 5.0000000000000016e-05 (Best_Acc1 71.3500 @ Epoch 817)
 # acc line example: Acc1 0.9195 @ Step 46600 (Best = 0.9208 @ Step 38200) lr 0.0001
+# acc line example: ==> test acc = 0.7156 @ step 80000 (best = 0.7240 @ step 21300)
+def is_acc_line(line):
+    '''This function determines if a line is an accuracy line. Of course the accuracy line should meet some 
+    format features which @mst used. So if these format features are changed, this func may not work.
+    '''
+    line = line.lower()
+    return "acc" in line and "best" in line and '@' in line
+
 def parse_acc(line):
     # last accuracy
     if 'Acc1 =' in line: # previous impel
         acc_l = _get_value(line, 'Acc1 =', exact_key=True)
+    elif 'test acc = ' in line: # previous impel
+        acc_l = _get_value(line, 'test acc =', exact_key=True)
     else:
         acc_l = _get_value(line, 'Acc1')
+
     # best accuray
     if 'Best Acc1' in line: # previous impel
         acc_b = _get_value(line, 'Best Acc1', exact_key=True)
@@ -77,6 +79,8 @@ def parse_acc(line):
         acc_b = _get_value(line, 'Best_Acc1', exact_key=True)
     elif 'Best =' in line:
         acc_b = _get_value(line, 'Best =', exact_key=True)
+    elif 'best = ' in line:
+        acc_b = _get_value(line, 'best =', exact_key=True)
     elif 'Best' in line:
         acc_b = _get_value(line, 'Best', exact_key=True)
     else:
@@ -89,6 +93,8 @@ def parse_time(line): # TODO
         time = int(epoch)
     elif 'Step' in line:
         time = _get_value(line, 'Step', type_func=int, exact_key=True)
+    elif 'step' in line:
+        time = _get_value(line, 'step', type_func=int, exact_key=True)
     else:
         raise NotImplementedError
     return time
