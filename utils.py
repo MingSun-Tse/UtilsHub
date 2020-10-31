@@ -674,5 +674,12 @@ class AccuracyManager():
         time, acc1, acc5 = last.time, last.acc1, last.acc5
         return time, acc1, acc5
 
-
-    
+def format_acc_log(acc1_set, lr, acc5=None, time_unit='Epoch'):
+    '''return uniform format for the accuracy print
+    '''
+    acc1, acc1_time, acc1_best, acc1_best_time = acc1_set
+    if acc5:
+        line = 'Acc1 %.4f Acc5 %.4f @ %s %d (Best_Acc1 %.4f @ %s %d) LR %s' % (acc1, acc5, time_unit, acc1_time, acc1_best, time_unit, acc1_best_time, lr)
+    else:
+        line = 'Acc1 %.4f @ %s %d (Best_Acc1 %.4f @ %s %d) LR %s' %  (acc1, time_unit, acc1_time, acc1_best, time_unit, acc1_best_time, lr)
+    return line
