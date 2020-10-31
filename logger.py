@@ -1,14 +1,6 @@
-import numpy as np
+import time, math, os, sys, copy, numpy as np, shutil as sh
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import time
-import math
-import os
-import shutil as sh
-from distutils.dir_util import copy_tree
-import glob
-import sys
-import copy
 try:
     from utils import get_project_path, mkdirs
 except:
@@ -16,6 +8,8 @@ except:
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from collections import OrderedDict
 import json, yaml
+import logging
+import traceback
 pjoin = os.path.join
 
 # globals
@@ -267,12 +261,14 @@ class Logger(object):
         self.script_hist = open('.script_history', 'a+') # save local script history, for convenience of check
 
     def print_script(self):
-        print(" ".join(["CUDA_VISIBLE_DEVICES=xx python", *sys.argv]),
-              file=self.logtxt, flush=True)
-        print(" ".join(["CUDA_VISIBLE_DEVICES=xx python", *sys.argv]),
-              file=sys.stdout, flush=True)
-        print(" ".join(["CUDA_VISIBLE_DEVICES=xx python", *sys.argv]),
-              file=self.script_hist, flush=True)
+        gpu_id = os.environ['CUDA_VISIBLE_DEVICES']
+        script = " ".join(["CUDA_VISIBLE_DEVICES=%s python" % gpu_id, *sys.argv])
+        print(script, file=self.logtxt, flush=True)
+        print(script, file=sys.stdout, flush=True)
+        print(script, file=self.script_hist, flush=True)
+    
+    def print_exc(self):
+        traceback.print_exc(file=self.logtxt)
 
     def print_note(self):
         project = self.get_project_name() # the current project folder name
