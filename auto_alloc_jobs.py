@@ -1,9 +1,7 @@
-import os
-import sys
-import time
-import copy
+import os, sys, time, copy
+import argparse
 
-def replace_var(line, dict):
+def replace_var(line, var_dict):
     '''This function is to replace the variables in shell script.
     '''
     line = line.strip()
@@ -23,7 +21,7 @@ def replace_var(line, dict):
                 var_name = line[start: end]
             else:
                 var_name = line[start:] # special case: the $VAR is at the end of the line
-            real_var = dict[var_name]
+            real_var = var_dict[var_name]
             
             if line[i + 1] == '{':
                 var_name = '${%s}' % var_name
@@ -32,14 +30,33 @@ def replace_var(line, dict):
             line_copy = line_copy.replace(var_name, real_var)
     return line_copy
 
+def remove_comments(f):
+    '''remove # comments in script files
+    '''
+    lines = []
+    for line in open(f, 'r'):
+        if '#' in line:
+            index = line.find('#') # get the index of the first #
+            line = line[:index]
+        lines.append(line)
+    return lines
+
+def is_exclude(line):
+    exclude = False
+    for x in args.exclude:
+        if len(x) and x in line:
+            exclude = True
+    return exclude
+
 class JobManager():
     def __init__(self, f):
         self.script_f = f
 
     def read_jobs(self):
         jobs = []
-        dict = {}
-        for line in open(self.script_f, 'r'):
+        var_dict = {}
+        lines = remove_comments(self.script_f)
+        for line in lines:
             line = line.strip()
             if line == '' or line.startswith('#'):
                 continue
@@ -48,15 +65,16 @@ class JobManager():
                 if v[0] == '"' and v[-1] == '"': # example: T="vgg13"
                     v = v[1:-1]
                 if '$' in v:
-                    dict[k] = replace_var(v, dict)
+                    var_dict[k] = replace_var(v, var_dict)
                 else:
-                    dict[k] = v
+                    var_dict[k] = v
             
             # collect jobs
             if line.startswith('python') or line.startswith('sh'):
-                print('Got a job: "%s", append it to the pool' % line)
-                new_line = replace_var(line, dict)
-                jobs.append(new_line)
+                new_line = replace_var(line, var_dict)
+                if not is_exclude(new_line):
+                    print('Got a job: "%s", append it to the pool' % new_line)
+                    jobs.append(new_line)
         return jobs
         
     def get_vacant_GPU_once(self):
@@ -115,11 +133,16 @@ class JobManager():
                     time.sleep(60)
         print('==> All jobs have been executed. Congrats!')
 
+
 '''Usage: python auto_alloc_jobs.py script.sh
 '''
+parser = argparse.ArgumentParser()
+parser.add_argument('--script', type=str, required=True)
+parser.add_argument('--exclude', type=str, default='', help='exclude scripts that are not expected to run. separated by comma. example: wrn,resnet56')
+args = parser.parse_args()
 def main():
-    f = sys.argv[1]
-    job_manager = JobManager(f)
+    args.exclude = args.exclude.split(',')
+    job_manager = JobManager(args.script)
     job_manager.run()
 
 if __name__ == '__main__':
