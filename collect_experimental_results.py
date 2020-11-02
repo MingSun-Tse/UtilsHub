@@ -128,7 +128,7 @@ def print_acc_for_one_exp(all_exps, name, mark, present_data):
                 for line in open(log_f, 'r'):
                     if is_acc_line(line) and mark in line:
                         acc_l, acc_b = parse_acc(line)
-                        time = parse_time(lines[-k])
+                        time = parse_time(line)
                         break
 
             if acc_b == -1:
