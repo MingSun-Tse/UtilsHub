@@ -273,10 +273,11 @@ class Logger(object):
     def print_note(self):
         project = self.get_project_name() # the current project folder name
         exp_id = self.ExpID.split('-')[-1] # SERVER138-20200623-095526
+        if not hasattr(self.args, 'note'):
+            self.args.note = ''
         self.ExpNote = 'ExpNote [%s-%s-%s]: "%s" -- %s' % (self.SERVER, project, exp_id, self.args.note, self.args.project_name)
-        if hasattr(self.args, 'note') and self.args.note:
-            print(self.ExpNote, file=self.logtxt, flush=True)
-            print(self.ExpNote, file=sys.stdout, flush=True)
+        print(self.ExpNote, file=self.logtxt, flush=True)
+        print(self.ExpNote, file=sys.stdout, flush=True)
 
     def plot(self, name, out_path):
         self.log_tracker.plot(name, out_path)
