@@ -144,7 +144,8 @@ def print_acc_for_one_exp(all_exps, name, mark, present_data):
             finish_time.append(finish_t)
             
     # print
-    exp_str = '[%s-%s] ' % (os.environ['SERVER'], _get_project_name()) + ', '.join(exp_id) # [138-CRD] 174550, 174554, 174558
+    current_server_id = os.environ['SERVER'] if 'SERVER' in os.environ else ''
+    exp_str = '[%s-%s] ' % (current_server_id, _get_project_name()) + ', '.join(exp_id) # [138-CRD] 174550, 174554, 174558
     n_digit = 2 # acc is like 75.64
     if len(acc_last) and acc_last[0] < 1: # acc is like 0.7564
         n_digit = 4
