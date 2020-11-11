@@ -679,3 +679,37 @@ def format_acc_log(acc1_set, lr, acc5=None, time_unit='Epoch'):
     else:
         line = 'Acc1 %.4f @ %s %d (Best_Acc1 %.4f @ %s %d) LR %s' %  (acc1, time_unit, acc1_time, acc1_best, time_unit, acc1_best_time, lr)
     return line
+
+def get_lambda(alpha=1.0):
+    '''Return lambda'''
+    if alpha > 0.:
+        lam = np.random.beta(alpha, alpha)
+    else:
+        lam = 1.
+    return lam
+
+# refer to: 2018-ICLR-mixup
+# https://github.com/facebookresearch/mixup-cifar10/blob/eaff31ab397a90fbc0a4aac71fb5311144b3608b/train.py#L119
+def mixup_data(x, y, alpha=1.0, use_cuda=True):
+    '''Returns mixed inputs, pairs of targets, and lambda'''
+    if alpha > 0:
+        lam = np.random.beta(alpha, alpha)
+    else:
+        lam = 1
+
+    batch_size = x.size()[0]
+    if use_cuda:
+        index = torch.randperm(batch_size).cuda()
+    else:
+        index = torch.randperm(batch_size)
+
+    mixed_x = lam * x + (1 - lam) * x[index, :]
+    y_a, y_b = y, y[index]
+    return mixed_x, y_a, y_b, lam
+
+
+def mixup_criterion(criterion, pred, y_a, y_b, lam):
+    return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+
+
+
