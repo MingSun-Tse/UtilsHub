@@ -32,7 +32,7 @@ def _get_exp_name_id(exp_path):
 
 def _get_project_name():
     cwd = os.getcwd()
-    assert '/Projects/' in cwd
+    # assert '/Projects/' in cwd
     return cwd.split('/')[-1] 
 
 def _make_acc_str(acc_list, num_digit=2, present=False):
