@@ -106,12 +106,13 @@ def parse_finish_time(log_f):
             finish_time = lines[-k].split('time:')[1].split('(')[0].strip() # example: predicted finish time: 2020/10/25-08:21 (speed: 314.98s per timing)
             return finish_time[5:] # example: 10/25-08:21
 
-def print_acc_for_one_exp(all_exps, name, mark, present_data):
+def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
     '''In <all_exps>, pick those with <name> in their name for accuracy collection.
     <name> is to locate which experiments; <mark> is to locate the accuracy line in a log.
     '''
     exp_id = []
     acc_last, acc_best, acc_time, finish_time = [], [], [], []
+    name = 'Experiments/%s_SERVER' % name
     for exp in all_exps:
         if name in exp:
             log_f = '%s/log/log.txt' % exp
@@ -164,13 +165,11 @@ def print_acc_for_one_exp(all_exps, name, mark, present_data):
         print(acc_best_str)
         print('acc_time: %s' % acc_time)
         print('fin_time: %s' % finish_time)
-        if np.max(acc_time) != np.min(acc_time):
-            print('==> Warning! Time of these accuracies is different: %s' % acc_time)
 
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--kw', type=str, required=True) # to select experiment
+parser.add_argument('--kw', type=str, required=True, help='keyword for foltering exps') # to select experiment
 parser.add_argument('--mark', type=str, default='last') # 'Epoch 240' or 'Step 11200', which is used to pin down the line that prints the best accuracy
 parser.add_argument('--present_data', type=str, default='', choices=['', 'last', 'best', 'last,best'])
 args = parser.parse_args()
@@ -179,20 +178,31 @@ def main():
         In the project dir, run:
         python ../UtilsHub/collect_experimental_results.py 20200731-18
     '''
-    all_exps = glob.glob('Experiments/*%s*' % args.kw)
+    # 1st filtering: get all the exps with the keyword
+    all_exps_ = glob.glob('Experiments/*%s*' % args.kw)
+
+    # 2nd filtering: add all the exps with the same name, even it is not included by the 1st filtering by kw
+    all_exps = []
+    for exp in all_exps_:
+        name, _ = _get_exp_name_id(exp)
+        all_exps_with_the_same_name = glob.glob('Experiments/*%s*' % name)
+        for x in all_exps_with_the_same_name:
+            if x not in all_exps:
+                all_exps.append(x)
+
     all_exps.sort()
     
-    # get independent exps, because each independent exp is run for multiple times.
-    independent_exps = []
+    # get group exps, because each group is made up of multiple times.
+    exp_groups = []
     for exp in all_exps:
         name, _ = _get_exp_name_id(exp)
-        if name not in independent_exps:
-            independent_exps.append(name)
+        if name not in exp_groups:
+            exp_groups.append(name)
     
-    # analyze each independent exp
-    for exp_name in independent_exps:
+    # analyze each independent exp (with multi-runs)
+    for exp_name in exp_groups:
         print('[%s]' % exp_name)
-        print_acc_for_one_exp(all_exps, 'Experiments/%s_SERVER' % exp_name, args.mark, args.present_data)
+        print_acc_for_one_exp_group(all_exps, exp_name, args.mark, args.present_data)
         print('')
 
 if __name__ == '__main__':
