@@ -185,7 +185,7 @@ def main():
     all_exps = []
     for exp in all_exps_:
         name, _ = _get_exp_name_id(exp)
-        all_exps_with_the_same_name = glob.glob('Experiments/*%s*' % name)
+        all_exps_with_the_same_name = glob.glob('Experiments/%s_SERVER' % name)
         for x in all_exps_with_the_same_name:
             if x not in all_exps:
                 all_exps.append(x)
