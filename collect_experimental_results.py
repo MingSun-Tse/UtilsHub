@@ -170,6 +170,7 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--kw', type=str, required=True, help='keyword for foltering exps') # to select experiment
+parser.add_argument('--exact_kw', action='store_true', help='if true, not filter by exp_name but exactly the kw')
 parser.add_argument('--mark', type=str, default='last') # 'Epoch 240' or 'Step 11200', which is used to pin down the line that prints the best accuracy
 parser.add_argument('--present_data', type=str, default='', choices=['', 'last', 'best', 'last,best'])
 args = parser.parse_args()
@@ -182,13 +183,16 @@ def main():
     all_exps_ = glob.glob('Experiments/*%s*' % args.kw)
 
     # 2nd filtering: add all the exps with the same name, even it is not included by the 1st filtering by kw
-    all_exps = []
-    for exp in all_exps_:
-        name, _ = _get_exp_name_id(exp)
-        all_exps_with_the_same_name = glob.glob('Experiments/%s_SERVER*' % name)
-        for x in all_exps_with_the_same_name:
-            if x not in all_exps:
-                all_exps.append(x)
+    if args.exact_kw:
+        all_exps = all_exps_
+    else:
+        all_exps = []
+        for exp in all_exps_:
+            name, _ = _get_exp_name_id(exp)
+            all_exps_with_the_same_name = glob.glob('Experiments/%s_SERVER*' % name)
+            for x in all_exps_with_the_same_name:
+                if x not in all_exps:
+                    all_exps.append(x)
 
     all_exps.sort()
     
