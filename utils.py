@@ -40,7 +40,7 @@ def get_n_params_(model):
                 n_params += module.bias.numel()
     return n_params
 
-def get_n_flops(model=None, input_res=224, multiply_adds=True):
+def get_n_flops(model=None, input_res=224, multiply_adds=True, n_channel=3):
     model = copy.deepcopy(model)
 
     prods = {}
@@ -136,7 +136,7 @@ def get_n_flops(model=None, input_res=224, multiply_adds=True):
     if model == None:
         model = torchvision.models.alexnet()
     foo(model)
-    input = Variable(torch.rand(3,input_res,input_res).unsqueeze(0), requires_grad = True)
+    input = Variable(torch.rand(n_channel,input_res,input_res).unsqueeze(0), requires_grad = True)
     out = model(input)
 
 
