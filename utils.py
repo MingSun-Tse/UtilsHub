@@ -31,6 +31,7 @@ def get_n_params(model):
     total /= 1e6
     return total
 
+# The above 'get_n_params' requires 'param.requires_grad' to be true. In KD, for the teacher, this is not the case.
 def get_n_params_(model):
     n_params = 0
     for _, module in model.named_modules():
@@ -144,6 +145,41 @@ def get_n_flops(model=None, input_res=224, multiply_adds=True):
     total_flops /= 1e9
     # print('  Number of FLOPs: %.2fG' % total_flops)
 
+    return total_flops
+
+# The above version is redundant. Get a neat version as follow.
+def get_n_flops_(model=None, img_size=224, n_channel=3, count_adds=True):
+    '''Only count the FLOPs of conv and linear layers (no BN layers etc.). 
+    Only count the weight computation (bias not included since it is negligible)
+    '''
+    model = copy.deepcopy(model)
+    list_conv = []
+    def conv_hook(self, input, output):
+        flops = np.prod(self.weight.data.shape) * output.size(2) * output.size(3) / self.groups
+        list_conv.append(flops)
+
+    list_linear = []
+    def linear_hook(self, input, output):
+        flops = np.prod(self.weight.data.shape)
+        list_linear.append(flops)
+
+    def register_hooks(net):
+        childrens = list(net.children())
+        if not childrens:
+            if isinstance(net, torch.nn.Conv2d):
+                net.register_forward_hook(conv_hook)
+            if isinstance(net, torch.nn.Linear):
+                net.register_forward_hook(linear_hook)
+            return
+        for c in childrens:
+            register_hooks(c)
+
+    register_hooks(model)
+    input = Variable(torch.rand(1, n_channel, img_size, img_size))
+    model(input)
+    total_flops = (sum(list_conv) + sum(list_linear))
+    if count_adds:
+        total_flops *= 2
     return total_flops
 
 # refer to: https://github.com/alecwangcq/EigenDamage-Pytorch/blob/master/utils/common_utils.py
@@ -394,6 +430,17 @@ def feat_visualize(ax, feat, label):
         ax.scatter(x[0], x[1], color=colors[y], marker=".")
     return ax
 
+def _remove_module_in_name(name):
+    ''' remove 'module.' in the module name, caused by DataParallel, if any
+    '''
+    module_name_parts = name.split(".")
+    module_name_parts_new = [] 
+    for x in module_name_parts:
+        if x != 'module':
+            module_name_parts_new.append(x)
+    new_name = '.'.join(module_name_parts_new)
+    return new_name
+
 def smart_weights_load(net, w_path, key=None, load_mode='exact'):
     '''
         This func is to load the weights of <w_path> into <net>.
@@ -444,15 +491,24 @@ def smart_weights_load(net, w_path, key=None, load_mode='exact'):
 
     else:
     # Here is the case that <net> and ckpt only have part of weights in common. Then load them by module name:
-    # for every named module in <net>, if ckpt has a module of the same name, then they are matched and weights are loaded from ckpt to <net>.
+    # for every named module in <net>, if ckpt has a module of the same (or contextually similar) name, then they are matched and weights are loaded from ckpt to <net>.
         for name, m in net.named_modules():
-            module_name = name.split("module.")[-1] # remove 'module.' if any
-            # match and load
-            matched_param_name = ''
-            for k in ckpt.keys():
-                if module_name in k:
-                    matched_param_name = k
-                    break
+            print(name)
+            
+        for name, m in net.named_modules():
+            if name:
+                print('loading weights for module "%s" in the network' % name)
+                new_name = _remove_module_in_name(name)
+
+                # find the matched module name
+                matched_param_name = ''
+                for k in ckpt.keys():
+                    new_k = _remove_module_in_name(k)
+                    if new_name == new_k:
+                        matched_param_name = k
+                        break
+                
+                # load weights
                 if matched_param_name:
                     m.weight.copy_(ckpt[matched_param_name])
                     print("net module name: '%s' <- '%s' (ckpt module name)" % (name, matched_param_name))
