@@ -523,8 +523,11 @@ def smart_weights_load(net, w_path, key=None, load_mode='exact'):
                     exit(1)
     
 class AccuracyAnalyzer():
-    def __init__(self):
+    def __init__(self, log):
         self.lr_state = OrderedDict()
+        self.log = check_path(log)
+        self.register_from_log()
+        self.analyze()
     
     def _register(self, lr, step, acc):
         '''
@@ -538,19 +541,10 @@ class AccuracyAnalyzer():
         else:
             self.lr_state[lr] = [[step, acc]]
 
-    def _get_value(self, line_seg, key, type_func=str, shift=1):
-        for i in range(len(line_seg)):
-            if key in line_seg[i]:
-                break
-        if i == len(line_seg) - 1:
-            return None # did not find the <key> in this line
-        value = line_seg[i + shift]
-        return type_func(value)
-    
     def clear(self):
         self.lr_state = OrderedDict()
 
-    def register_from_log(self, log):
+    def register_from_log(self):
         '''
             <log> will be like this: 
                 [221700 29847 2020/06/13-04:27:58]  Acc1 = 72.6460 Acc5 = 90.9620 Epoch 77 (after update) lr 0.001 (Best Acc1 72.6920 @ Epoch 73)
@@ -559,12 +553,12 @@ class AccuracyAnalyzer():
                 [221700 29847 2020/06/13-05:38:03]  Acc1 = 72.6340 Acc5 = 90.9080 Epoch 80 (after update) lr 0.001 (Best Acc1 72.6940 @ Epoch 79)
             Warning: This func depends on the specific log format. Need improvement.
         '''
-        for line in open(log):
-            line_seg = line.strip().lower().split()
-            lr = self._get_value(line_seg, 'lr')
-            step = self._get_value(line_seg, 'epoch', type_func=int)
-            acc = self._get_value(line_seg, 'acc1', type_func=float, shift=2)
-            self._register(lr, step, acc)
+        for line in open(self.log):
+            if 'Acc1' in line and '@' in line:
+                lr = parse_acc_log(line, 'lr')
+                step = parse_acc_log(line, 'epoch', type_func=int)
+                acc = parse_acc_log(line, 'acc1')
+                self._register(lr, step, acc)
     
     def analyze(self, print_func=print):
         keys = list(self.lr_state.keys())
@@ -582,6 +576,20 @@ class AccuracyAnalyzer():
     
     def plot(self):
         pass
+
+# parse wanted value from accuracy print log
+def parse_acc_log(line, key, type_func=float):
+    line_seg = line.strip().lower().split()
+    for i in range(len(line_seg)):
+        if key in line_seg[i]:
+            break
+    if i == len(line_seg) - 1:
+        return None # did not find the <key> in this line
+    try:
+        value = type_func(line_seg[i+1])
+    except:
+        value = type_func(line_seg[i+2])
+    return value
 
 def get_layer_by_index(net, index):
     cnt = -1
