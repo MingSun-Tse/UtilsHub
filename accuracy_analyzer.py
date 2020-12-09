@@ -1,14 +1,16 @@
-from utils import check_path, parse_acc_log
+from utils import parse_acc_log
 from collections import OrderedDict
 import numpy as np
-import sys
+import sys, glob
 
 class AccuracyAnalyzer():
     def __init__(self, log):
-        self.lr_state = OrderedDict()
-        self.log = check_path(log)
-        self.register_from_log()
-        self.analyze()
+        logs = glob.glob(log)
+        for log in logs: # there may be multiple logs
+            self.log = log
+            self.lr_state = OrderedDict()
+            self.register_from_log()
+            self.analyze()
     
     def _register(self, lr, step, acc):
         '''
