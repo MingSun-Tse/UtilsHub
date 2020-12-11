@@ -727,4 +727,79 @@ def mixup_criterion(criterion, pred, y_a, y_b, lam):
     return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
 
 
+def visualize_filter(layer, layer_id, save_dir, n_filter_plot=16, n_channel_plot=16, pick_mode='rand', plot_abs=True, prefix='', ext='.pdf'):
+    '''layer is a pytorch model layer 
+    '''
+    w = layer.weight.data.cpu().numpy() # shape: [N, C, H, W]
+    if plot_abs:
+        w = np.abs(w)
+    n, c = w.shape[0], w.shape[1]
+    n_filter_plot = min(n_filter_plot, n)
+    n_channel_plot = min(n_channel_plot, c)
+    if pick_mode == 'rand':
+        filter_ix = np.random.permutation(n)[:n_filter_plot] # filter indexes to plot
+        channel_ix = np.random.permutation(c)[:n_channel_plot] # channel indexes to plot
+    else:
+        filter_ix = list(range(n_filter_plot))
+        channel_ix = list(range(n_channel_plot))
+    
+    # iteration for plotting
+    for i in filter_ix:
+        f_avg = np.mean(w[i], axis=0)
+        fig, ax = plt.subplots()
+        im = ax.imshow(f_avg, cmap='jet')
+        # make a beautiful colorbar
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes('right', size=0.05, pad=0.05)
+        fig.colorbar(im, cax=cax, orientation='vertical')
+        save_path = '%s/filter_visualize__%s__layer%s__filter%s__average_cross_channel' % (save_dir, prefix, layer_id, i) # prefix is usually a net name
+        fig.savefig(save_path + ext, bbox_inches='tight')
+        plt.close(fig)
 
+        for j in channel_ix:
+            f = w[i][j]
+            fig, ax = plt.subplots()
+            im = ax.imshow(f, cmap='jet')
+            # make a beautiful colorbar        
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes('right', size=0.05, pad=0.05)
+            fig.colorbar(im, cax=cax, orientation='vertical')
+            save_path = '%s/filter_visualize__%s__layer%s__filter%s__channel%s' % (save_dir, prefix, layer_id, i, j)
+            fig.savefig(save_path + ext, bbox_inches='tight')
+            plt.close(fig)
+
+def visualize_feature_map(fm, layer_id, save_dir, n_channel_plot=16, pick_mode='rand', plot_abs=True, prefix='', ext='.pdf'):
+    fm = fm.clone().detach()
+    fm = fm.data.cpu().numpy()[0] # shape: [N, C, H, W], N is batch size. Default: batch size should be 1
+    if plot_abs:
+        fm = np.abs(fm)
+    c = fm.shape[0]
+    n_channel_plot = min(n_channel_plot, c)
+    if pick_mode == 'rand':
+        channel_ix = np.random.permutation(c)[:n_channel_plot] # channel indexes to plot
+    else:
+        channel_ix = list(range(n_channel_plot))
+    
+    # iteration for plotting
+    fm_avg = np.mean(fm, axis=0)
+    fig, ax = plt.subplots()
+    im = ax.imshow(fm_avg, cmap='jet')
+    # make a beautiful colorbar
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes('right', size=0.05, pad=0.05)
+    fig.colorbar(im, cax=cax, orientation='vertical')
+    save_path = '%s/featmap_visualization__%s__layer%s__average_cross_channel' % (save_dir, prefix, layer_id) # prefix is usually a net name
+    fig.savefig(save_path + ext, bbox_inches='tight')
+    plt.close(fig)
+
+    for j in channel_ix:
+        f = fm[j]
+        fig, ax = plt.subplots()
+        im = ax.imshow(f, cmap='jet')
+        # make a beautiful colorbar        
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes('right', size=0.05, pad=0.05)
+        fig.colorbar(im, cax=cax, orientation='vertical')
+        save_path = '%s/featmap_visualization__%s__layer%s__channel%s' % (save_dir, prefix, layer_id, j)
+        fig.savefig(save_path + ext, bbox_inches='tight')
+        plt.close(fig)
