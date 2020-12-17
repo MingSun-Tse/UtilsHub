@@ -40,6 +40,8 @@ class LogPrinter(object):
         self.__call__(blank, *in_str)
     
     def netprint(self, *in_str): # i.e., print without any prefix
+        '''Deprecated. Use netprint in Logger.
+        '''
         for x in in_str:
             print(x, file=self.file, flush=True)
             if self.print_to_screen:
@@ -343,5 +345,9 @@ class Logger(object):
             json.dump(args.__dict__, f, indent=4)
         with open(pjoin(self.log_path, 'params.yaml'), 'w') as f:
             yaml.dump(args.__dict__, f, indent=4)
-
-        
+    
+    def netprint(self, net, comment=''):
+        with open(pjoin(self.log_path, 'model_arch.txt'), 'w') as f:
+            if comment:
+                print('%s:' % comment, file=f)
+            print('%s\n' % str(net), file=f, flush=True)
