@@ -7,7 +7,7 @@ class AccuracyAnalyzer():
     def __init__(self, log_path):
         logs = glob.glob(log_path)
         for log in logs: # there may be multiple logs
-            print(log)
+            # print(log)
             self.log = log
             self.lr_state = OrderedDict()
             self.register_from_log()
