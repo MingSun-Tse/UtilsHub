@@ -52,7 +52,7 @@ class AccuracyAnalyzer():
             max_len_lr = max(len(str(k)), max_len_lr) # eg, from 0.1 to 0.0001
         vals = list(self.lr_state.values())
         max_len_step = len(str(vals[-1][-1][0])) # eg, from 0 to 10000
-        format_str = 'lr %{}s (%{}d - %{}d): max acc = %.4f, min acc = %.4f, ave acc = %.4f'.format(max_len_lr, max_len_step, max_len_step)
+        format_str = 'lr %{}s (%{}d - %{}d) -- max_acc %.4f | min_acc %.4f | avg_acc %.4f'.format(max_len_lr, max_len_step, max_len_step)
         for lr in self.lr_state.keys():
             lr_state = np.array(self.lr_state[lr])
             step = lr_state[:, 0]
