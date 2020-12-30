@@ -157,7 +157,7 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
     
     if len(acc_last) == 1: # only one result
         acc_str = _make_acc_str_one_exp(acc_last[0], acc_best[0], num_digit=n_digit)
-        print('exp_date: %s' % date[-1])
+        print('[exp date: %s]' % date[-1])
         print(exp_str + ' -- ' + acc_str) # [115-CCL] 225022 -- 0.1926/0.4944 
         print('acc_time: %s' % acc_time[0])
         print('fin_time: %s' % (finish_time[0]))
@@ -165,7 +165,7 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
     elif len(acc_last) > 1:
         acc_last_str = _make_acc_str(acc_last, num_digit=n_digit, present='last' in present_data) # 75.84, 75.63, 75.45 – 75.64 (0.16)
         acc_best_str = _make_acc_str(acc_best, num_digit=n_digit, present='best' in present_data)
-        print('exp_date: %s' % date)
+        print('[exp date: %s]' % date)
         print(exp_str)
         print(acc_last_str)
         print(acc_best_str)
