@@ -12,7 +12,6 @@ class AccuracyAnalyzer():
             self.lr_state = OrderedDict()
             self.register_from_log()
             self.analyze()
-            print('')
     
     def _register(self, lr, step, acc):
         '''
