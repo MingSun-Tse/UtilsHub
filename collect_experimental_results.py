@@ -157,6 +157,7 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
                     loss_test_just_finished_prune.append(loss_test)
                     acc1_train_just_finished_prune.append(acc1_train)
                     loss_train_just_finished_prune.append(loss_train)
+                    break
             
             acc_last.append(acc_l)
             acc_best.append(acc_b)
@@ -200,6 +201,8 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
     
     # for loss, acc correlation analysis
     if len(loss_train_just_finished_prune):
+        print(len(acc1_test_just_finished_prune), len(loss_test_just_finished_prune), 
+            len(acc1_train_just_finished_prune), len(loss_train_just_finished_prune), len(acc1_test_after_ft))
         tmp = np.stack([acc1_test_just_finished_prune, loss_test_just_finished_prune, 
             acc1_train_just_finished_prune, loss_train_just_finished_prune, acc1_test_after_ft])
         print('matrix shape %s, corrcoef of loss just finished prune and final test acc:\n%s' % (np.shape(tmp), np.corrcoef(tmp)))
