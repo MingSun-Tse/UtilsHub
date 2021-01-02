@@ -116,6 +116,13 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
     exp_id, date = [], []
     acc_last, acc_best, acc_time, finish_time = [], [], [], []
     name = 'Experiments/%s_SERVER' % name
+
+    # for loss, acc correlation analysis
+    acc1_test_just_finished_prune = []
+    loss_test_just_finished_prune = []
+    acc1_train_just_finished_prune = []
+    loss_train_just_finished_prune = []
+    acc1_test_after_ft = []
     for exp in all_exps:
         if name in exp:
             log_f = '%s/log/log.txt' % exp
@@ -138,6 +145,18 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
             if acc_b == -1:
                 print('Not found mark "%s" in the log "%s", skip it' % (mark, log_f))
                 continue
+        
+            # parse, for loss, acc correlation analysis
+            for line in open(log_f, 'r'):
+                if 'Just got pruned model' in line and 'Loss_train' in line:
+                    acc1_test = _get_value(line, 'Acc1', exact_key=True)
+                    loss_test = _get_value(line, 'Loss_test', exact_key=True)
+                    acc1_train = _get_value(line, 'Acc1_train', exact_key=True)
+                    loss_train = _get_value(line, 'Loss_train', exact_key=True)
+                    acc1_test_just_finished_prune.append(acc1_test)
+                    loss_test_just_finished_prune.append(loss_test)
+                    acc1_train_just_finished_prune.append(acc1_train)
+                    loss_train_just_finished_prune.append(loss_train)
             
             acc_last.append(acc_l)
             acc_best.append(acc_b)
@@ -147,6 +166,7 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
             date.append(d)
             finish_t = parse_finish_time(log_f)
             finish_time.append(finish_t)
+            acc1_test_after_ft.append(acc_b) # for loss, acc correlation analysis
             
     # print
     current_server_id = os.environ['SERVER'] if 'SERVER' in os.environ else ''
@@ -177,6 +197,13 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
         if name in exp:
             log_f = '%s/log/log.txt' % exp
             AccuracyAnalyzer(log_f)
+    
+    # for loss, acc correlation analysis
+    if len(loss_train_just_finished_prune):
+        tmp = np.stack([acc1_test_just_finished_prune, loss_test_just_finished_prune, 
+            acc1_train_just_finished_prune, loss_train_just_finished_prune, acc1_test_after_ft])
+        print('matrix shape %s, corrcoef of loss just finished prune and final test acc:\n%s' % (np.shape(tmp), np.corrcoef(tmp)))
+        print('attr: acc1_test_just_finished_prune, loss_test_just_finished_prune, acc1_train_just_finished_prune, loss_train_just_finished_prune, acc1_test_after_ft')
 
 
 parser = argparse.ArgumentParser()
