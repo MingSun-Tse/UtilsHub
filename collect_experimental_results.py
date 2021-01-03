@@ -194,18 +194,19 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
         print('fin_time: %s' % (finish_time))
 
     # accuracy analyzer
-    for exp in all_exps:
-        if name in exp:
-            log_f = '%s/log/log.txt' % exp
-            AccuracyAnalyzer(log_f)
+    if args.acc_analysis:
+        for exp in all_exps:
+            if name in exp:
+                log_f = '%s/log/log.txt' % exp
+                AccuracyAnalyzer(log_f)
     
     # for loss, acc correlation analysis
     if len(loss_train_just_finished_prune):
-        print(len(acc1_test_just_finished_prune), len(loss_test_just_finished_prune), 
-            len(acc1_train_just_finished_prune), len(loss_train_just_finished_prune), len(acc1_test_after_ft))
+        # print(len(acc1_test_just_finished_prune), len(loss_test_just_finished_prune), 
+        #     len(acc1_train_just_finished_prune), len(loss_train_just_finished_prune), len(acc1_test_after_ft))
         tmp = np.stack([acc1_test_just_finished_prune, loss_test_just_finished_prune, 
             acc1_train_just_finished_prune, loss_train_just_finished_prune, acc1_test_after_ft])
-        print('matrix shape %s, corrcoef of loss just finished prune and final test acc:\n%s' % (np.shape(tmp), np.corrcoef(tmp)))
+        print('matrix shape: %s, corrcoef of loss just finished prune and final test acc:\n%s' % (np.shape(tmp), np.corrcoef(tmp)))
         print('attr: acc1_test_just_finished_prune, loss_test_just_finished_prune, acc1_train_just_finished_prune, loss_train_just_finished_prune, acc1_test_after_ft')
 
 
@@ -214,6 +215,7 @@ parser.add_argument('--kw', type=str, required=True, help='keyword for foltering
 parser.add_argument('--exact_kw', action='store_true', help='if true, not filter by exp_name but exactly the kw')
 parser.add_argument('--mark', type=str, default='last') # 'Epoch 240' or 'Step 11200', which is used to pin down the line that prints the best accuracy
 parser.add_argument('--present_data', type=str, default='', choices=['', 'last', 'best', 'last,best'])
+parser.add_argument('--acc_analysis', action='store_true')
 args = parser.parse_args()
 def main():
     '''Usage:
