@@ -201,7 +201,7 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
                 AccuracyAnalyzer(log_f)
     
     # for loss, acc correlation analysis
-    if len(loss_train_just_finished_prune):
+    if args.corr_analysis and len(loss_train_just_finished_prune):
         # print(len(acc1_test_just_finished_prune), len(loss_test_just_finished_prune), 
         #     len(acc1_train_just_finished_prune), len(loss_train_just_finished_prune), len(acc1_test_after_ft))
         tmp = np.stack([acc1_test_just_finished_prune, loss_test_just_finished_prune, 
@@ -216,6 +216,7 @@ parser.add_argument('--exact_kw', action='store_true', help='if true, not filter
 parser.add_argument('--mark', type=str, default='last') # 'Epoch 240' or 'Step 11200', which is used to pin down the line that prints the best accuracy
 parser.add_argument('--present_data', type=str, default='', choices=['', 'last', 'best', 'last,best'])
 parser.add_argument('--acc_analysis', action='store_true')
+parser.add_argument('--corr_analysis', action='store_true')
 args = parser.parse_args()
 def main():
     '''Usage:
