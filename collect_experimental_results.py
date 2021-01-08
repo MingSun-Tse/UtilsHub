@@ -171,8 +171,10 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
                     current_epoch = _get_value(line, 'Epoch', exact_key=True, type_func=int)
                     if current_epoch == best_epoch:
                         loss_train = _get_value(line, 'Loss_train', exact_key=True)
+                        acc1_train = _get_value(line, 'Acc1_train', exact_key=True)
                         loss_test = _get_value(line, 'Loss_test', exact_key=True)
             loss_train_after_ft.append(loss_train)
+            acc1_train_after_ft.append(acc1_train)
             loss_test_after_ft.append(loss_test)
             
             acc_last.append(acc_l)
@@ -225,9 +227,9 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
         #     len(acc1_train_just_finished_prune), len(loss_train_just_finished_prune), len(acc1_test_after_ft))
         tmp = np.stack([acc1_test_just_finished_prune, loss_test_just_finished_prune, 
             acc1_train_just_finished_prune, loss_train_just_finished_prune, loss_train_after_ft, acc1_test_after_ft])
-        tmp = np.stack([loss_train_just_finished_prune, loss_train_after_ft, loss_test_after_ft, acc1_test_after_ft])
+        tmp = np.stack([loss_train_just_finished_prune, loss_train_after_ft, acc1_train_after_ft, loss_test_after_ft, acc1_test_after_ft])
         print('matrix shape: %s, corrcoef of loss just finished prune and final test acc:\n%s' % (np.shape(tmp), np.corrcoef(tmp)))
-        print('attr: loss_train_just_finished_prune, loss_train_after_ft, loss_test_after_ft, acc1_test_after_ft')
+        print('loss_train_just_finished_prune, loss_train_after_ft, acc1_train_after_ft, loss_test_after_ft, acc1_test_after_ft')
 
 
 parser = argparse.ArgumentParser()
