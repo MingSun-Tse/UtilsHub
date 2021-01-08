@@ -1,5 +1,6 @@
 import os, sys, time, copy
 import argparse
+from utils import Timer
 
 def replace_var(line, var_dict):
     '''This function is to replace the variables in shell script.
@@ -115,8 +116,9 @@ class JobManager():
         jobs = self.read_jobs()
         jobs = jobs * args.times
         n_job = len(jobs)
-        print('Jobs will be repeated by %d times. Total number: %d' % (args.times, n_job))
+        print('[%s] Jobs will be repeated by %d times. Total job number: %d' % (time.strftime("%Y/%m/%d-%H:%M:%S"), args.times, n_job))
         n_executed = 0
+        timer = Timer(n_job)
         for job in jobs:
             while 1:
                 vacant_gpus = self.get_vacant_GPU()
@@ -128,6 +130,7 @@ class JobManager():
                     n_executed += 1
                     print('[%s] ==> Found vacant GPUs: %s' % (current_time, ' '.join(vacant_gpus)))
                     print('[%s] ==> Run job on GPU %s: [%s] %d jobs left.\n' % (current_time, gpu, new_script, n_job - n_executed))
+                    print('[%s] ==> Predicted finish time: %s' % timer())
                     time.sleep(10) # wait for 10 seconds so that the GPU is fully activated
                     break
                 else:
