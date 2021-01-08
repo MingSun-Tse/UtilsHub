@@ -115,7 +115,7 @@ class JobManager():
         jobs = self.read_jobs()
         jobs = jobs * args.times
         n_job = len(jobs)
-        print('Jobs will be repeated by %d times. Total number: %d' % (args.time, n_job))
+        print('Jobs will be repeated by %d times. Total number: %d' % (args.times, n_job))
         n_executed = 0
         for job in jobs:
             while 1:
