@@ -113,7 +113,9 @@ class JobManager():
     
     def run(self):
         jobs = self.read_jobs()
+        jobs = jobs * args.times
         n_job = len(jobs)
+        print('Jobs will be repeated by %d times. Total number: %d' % (args.time, n_job))
         n_executed = 0
         for job in jobs:
             while 1:
@@ -138,6 +140,7 @@ class JobManager():
 '''
 parser = argparse.ArgumentParser()
 parser.add_argument('--script', type=str, required=True)
+parser.add_argument('--times', type=int, default=1, help='each experiment will be run by <times> times')
 parser.add_argument('--exclude', type=str, default='', help='exclude scripts that are not expected to run. separated by comma. example: wrn,resnet56')
 args = parser.parse_args()
 def main():
