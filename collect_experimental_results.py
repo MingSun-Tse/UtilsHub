@@ -9,6 +9,8 @@ pjoin = os.path.join
 def _get_value(line, key, type_func=float, exact_key=False):
     if exact_key: # back compatibility
         value = line.split(key)[1].strip().split()[0]
+        if value.endswith(')'): # hand-fix case: "Epoch 23)"
+            value = value[:-1] 
         value = type_func(value)
     else:
         line_seg = line.split()
@@ -123,6 +125,9 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
     acc1_train_just_finished_prune = []
     loss_train_just_finished_prune = []
     acc1_test_after_ft = []
+    loss_test_after_ft = []
+    acc1_train_after_ft = []
+    loss_train_after_ft = []
     for exp in all_exps:
         if name in exp:
             log_f = '%s/log/log.txt' % exp
@@ -159,6 +164,17 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
                     loss_train_just_finished_prune.append(loss_train)
                     break
             
+            # get statistics for best model
+            for line in open(log_f, 'r'):
+                if is_acc_line(line):
+                    best_epoch = _get_value(line, 'Best_Acc1_Epoch', exact_key=True, type_func=int)
+                    current_epoch = _get_value(line, 'Epoch', exact_key=True, type_func=int)
+                    if current_epoch == best_epoch:
+                        loss_train = _get_value(line, 'Loss_train', exact_key=True)
+                        loss_test = _get_value(line, 'Loss_test', exact_key=True)
+            loss_train_after_ft.append(loss_train)
+            loss_test_after_ft.append(loss_test)
+            
             acc_last.append(acc_l)
             acc_best.append(acc_b)
             acc_time.append(time)
@@ -190,7 +206,10 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
         print(exp_str)
         print(acc_last_str)
         print(acc_best_str)
-        print('acc_time: %s' % acc_time)
+        if np.mean(acc_time) == np.max(acc_time):
+            print('acc_time: %s' % acc_time)
+        else:
+            print('acc_time: %s -- Warning: acc times are different!' % acc_time)
         print('fin_time: %s' % (finish_time))
 
     # accuracy analyzer
@@ -205,9 +224,10 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
         # print(len(acc1_test_just_finished_prune), len(loss_test_just_finished_prune), 
         #     len(acc1_train_just_finished_prune), len(loss_train_just_finished_prune), len(acc1_test_after_ft))
         tmp = np.stack([acc1_test_just_finished_prune, loss_test_just_finished_prune, 
-            acc1_train_just_finished_prune, loss_train_just_finished_prune, acc1_test_after_ft])
+            acc1_train_just_finished_prune, loss_train_just_finished_prune, loss_train_after_ft, acc1_test_after_ft])
+        tmp = np.stack([loss_train_just_finished_prune, loss_train_after_ft, loss_test_after_ft, acc1_test_after_ft])
         print('matrix shape: %s, corrcoef of loss just finished prune and final test acc:\n%s' % (np.shape(tmp), np.corrcoef(tmp)))
-        print('attr: acc1_test_just_finished_prune, loss_test_just_finished_prune, acc1_train_just_finished_prune, loss_train_just_finished_prune, acc1_test_after_ft')
+        print('attr: loss_train_just_finished_prune, loss_train_after_ft, loss_test_after_ft, acc1_test_after_ft')
 
 
 parser = argparse.ArgumentParser()
