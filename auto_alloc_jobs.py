@@ -129,8 +129,8 @@ class JobManager():
                     os.system(new_script)
                     n_executed += 1
                     print('[%s] ==> Found vacant GPUs: %s' % (current_time, ' '.join(vacant_gpus)))
-                    print('[%s] ==> Run job on GPU %s: [%s] %d jobs left.\n' % (current_time, gpu, new_script, n_job - n_executed))
-                    print('[%s] ==> Predicted finish time: %s' % timer())
+                    print('[%s] ==> Run job on GPU %s: [%s] %d jobs left' % (current_time, gpu, new_script, n_job - n_executed))
+                    print('[%s] ==> Predicted finish time: %s\n' % (current_time, timer()))
                     time.sleep(10) # wait for 10 seconds so that the GPU is fully activated
                     break
                 else:
