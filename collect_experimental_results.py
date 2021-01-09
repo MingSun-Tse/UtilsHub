@@ -235,22 +235,32 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
             pass
             # corr = stats.pearsonr(matrix)
         elif args.corr_stats == 'spearman':
-            corr, p_value = stats.spearmanr(matrix, axis=1) # axis=1, each row is a variable; each column is an observation
-        
-        attr = ['pruned_loss_train', 'final_loss_train', 'final_loss_test']
+            corr, pval = stats.spearmanr(matrix, axis=1) # axis=1, each row is a variable; each column is an observation
+        elif args.corr_stats == 'kendall':
+            corr01, pval01 = stats.kendalltau(loss_train_just_finished_prune, loss_train_after_ft)
+            corr02, pval02 = stats.kendalltau(loss_train_just_finished_prune, loss_test_after_ft)
+            corr12, pval12 = stats.kendalltau(loss_train_after_ft, loss_test_after_ft)
+            corr, pval = np.ones([3, 3]), np.zeros([3, 3])
+            corr[0, 1], corr[0, 2], corr[1, 2] = corr01, corr02, corr12
+            pval[0, 1], pval[0, 2], pval[1, 2] = pval01, pval02, pval12
+
+        attr = ['pruned_loss_train', 'final_loss_train', 'final_loss_test'] # what to print is manually set
         print('------------------ matrix shape: %s, correlation matrix: ------------------' % shape)
         print(attr)
         matprint(corr)
         print('------------------ p-value: ------------------')
-        matprint(p_value)
+        matprint(pval)
 
 
 def matprint(mat, fmt="g"):
-    col_maxes = [max([len(("{:"+fmt+"}").format(x)) for x in col]) for col in mat.T]
-    for x in mat:
-        for i, y in enumerate(x):
-            print(("{:"+str(col_maxes[i])+fmt+"}").format(y), end="  ")
-        print("")
+    try:
+        col_maxes = [max([len(("{:"+fmt+"}").format(x)) for x in col]) for col in mat.T]
+        for x in mat:
+            for i, y in enumerate(x):
+                print(("{:"+str(col_maxes[i])+fmt+"}").format(y), end="  ")
+            print("")
+    except:
+        print(mat)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--kw', type=str, required=True, help='keyword for foltering exps') # to select experiment
@@ -259,7 +269,7 @@ parser.add_argument('--mark', type=str, default='last') # 'Epoch 240' or 'Step 1
 parser.add_argument('--present_data', type=str, default='', choices=['', 'last', 'best', 'last,best'])
 parser.add_argument('--acc_analysis', action='store_true')
 parser.add_argument('--corr_analysis', action='store_true')
-parser.add_argument('--corr_stats', type=str, default='spearman', choices=['pearson', 'spearman'])
+parser.add_argument('--corr_stats', type=str, default='spearman', choices=['pearson', 'spearman', 'kendall'])
 args = parser.parse_args()
 def main():
     '''Usage:
