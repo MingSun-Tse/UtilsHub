@@ -1,6 +1,7 @@
 import sys
 import os
 import numpy as np
+from scipy import stats
 import glob
 import argparse
 from accuracy_analyzer import AccuracyAnalyzer
@@ -165,17 +166,18 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
                     break
             
             # get statistics for best model
-            for line in open(log_f, 'r'):
-                if is_acc_line(line):
-                    best_epoch = _get_value(line, 'Best_Acc1_Epoch', exact_key=True, type_func=int)
-                    current_epoch = _get_value(line, 'Epoch', exact_key=True, type_func=int)
-                    if current_epoch == best_epoch:
-                        loss_train = _get_value(line, 'Loss_train', exact_key=True)
-                        acc1_train = _get_value(line, 'Acc1_train', exact_key=True)
-                        loss_test = _get_value(line, 'Loss_test', exact_key=True)
-            loss_train_after_ft.append(loss_train)
-            acc1_train_after_ft.append(acc1_train)
-            loss_test_after_ft.append(loss_test)
+            if args.corr_analysis:
+                for line in open(log_f, 'r'):
+                    if is_acc_line(line):
+                        best_epoch = _get_value(line, 'Best_Acc1_Epoch', exact_key=True, type_func=int)
+                        current_epoch = _get_value(line, 'Epoch', exact_key=True, type_func=int)
+                        if current_epoch == best_epoch:
+                            loss_train = _get_value(line, 'Loss_train', exact_key=True)
+                            acc1_train = _get_value(line, 'Acc1_train', exact_key=True)
+                            loss_test = _get_value(line, 'Loss_test', exact_key=True)
+                loss_train_after_ft.append(loss_train)
+                acc1_train_after_ft.append(acc1_train)
+                loss_test_after_ft.append(loss_test)
             
             acc_last.append(acc_l)
             acc_best.append(acc_b)
@@ -225,12 +227,30 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
     if args.corr_analysis and len(loss_train_just_finished_prune):
         # print(len(acc1_test_just_finished_prune), len(loss_test_just_finished_prune), 
         #     len(acc1_train_just_finished_prune), len(loss_train_just_finished_prune), len(acc1_test_after_ft))
-        tmp = np.stack([acc1_test_just_finished_prune, loss_test_just_finished_prune, 
+        matrix = np.stack([acc1_test_just_finished_prune, loss_test_just_finished_prune, 
             acc1_train_just_finished_prune, loss_train_just_finished_prune, loss_train_after_ft, acc1_test_after_ft])
-        tmp = np.stack([loss_train_just_finished_prune, loss_train_after_ft, acc1_train_after_ft, loss_test_after_ft, acc1_test_after_ft])
-        print('matrix shape: %s, corrcoef of loss just finished prune and final test acc:\n%s' % (np.shape(tmp), np.corrcoef(tmp)))
-        print('loss_train_just_finished_prune, loss_train_after_ft, acc1_train_after_ft, loss_test_after_ft, acc1_test_after_ft')
+        matrix = np.stack([loss_train_just_finished_prune, loss_train_after_ft, loss_test_after_ft])
+        shape = str(np.shape(matrix))
+        if args.corr_stats == 'pearson':
+            pass
+            # corr = stats.pearsonr(matrix)
+        elif args.corr_stats == 'spearman':
+            corr, p_value = stats.spearmanr(matrix, axis=1) # axis=1, each row is a variable; each column is an observation
+        
+        attr = ['pruned_loss_train', 'final_loss_train', 'final_loss_test']
+        print('------------------ matrix shape: %s, correlation matrix: ------------------' % shape)
+        print(attr)
+        matprint(corr)
+        print('------------------ p-value: ------------------')
+        matprint(p_value)
 
+
+def matprint(mat, fmt="g"):
+    col_maxes = [max([len(("{:"+fmt+"}").format(x)) for x in col]) for col in mat.T]
+    for x in mat:
+        for i, y in enumerate(x):
+            print(("{:"+str(col_maxes[i])+fmt+"}").format(y), end="  ")
+        print("")
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--kw', type=str, required=True, help='keyword for foltering exps') # to select experiment
@@ -239,6 +259,7 @@ parser.add_argument('--mark', type=str, default='last') # 'Epoch 240' or 'Step 1
 parser.add_argument('--present_data', type=str, default='', choices=['', 'last', 'best', 'last,best'])
 parser.add_argument('--acc_analysis', action='store_true')
 parser.add_argument('--corr_analysis', action='store_true')
+parser.add_argument('--corr_stats', type=str, default='spearman', choices=['pearson', 'spearman'])
 args = parser.parse_args()
 def main():
     '''Usage:
