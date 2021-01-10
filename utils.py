@@ -806,3 +806,11 @@ def visualize_feature_map(fm, layer_id, save_dir, n_channel_plot=16, pick_mode='
         save_path = '%s/featmap_visualization__%s__layer%s__channel%s' % (save_dir, prefix, layer_id, j)
         fig.savefig(save_path + ext, bbox_inches='tight')
         plt.close(fig)
+
+def add_noise_to_model(model, std=0.01):
+    model = copy.deepcopy(model) # do not modify the original model
+    for name, module in model.named_modules():
+        if isinstance(module, (nn.Conv2d, nn.Linear, nn.BatchNorm2d)): # all learnable params for a typical DNN
+            w = module.weight
+            w.data += torch.randn_like(w) * std
+    return model
