@@ -112,6 +112,15 @@ def parse_finish_time(log_f):
             finish_time = lines[-k].split('time:')[1].split('(')[0].strip() # example: predicted finish time: 2020/10/25-08:21 (speed: 314.98s per timing)
             return finish_time[5:] # example: 10/25-08:21
 
+def remove_outlier_acc(acc_list, index=None):
+    std = np.std(acc_list)
+    mean = np.mean(acc_list)
+    output = []
+    for acc in acc_list:
+        if abs(acc - mean) < std:
+            output.append(acc)
+    return output
+
 def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
     '''In <all_exps>, pick those with <name> in their name for accuracy collection.
     <name> is to locate which experiments; <mark> is to locate the accuracy line in a log.
@@ -189,6 +198,11 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
             finish_time.append(finish_t)
             acc1_test_after_ft.append(acc_b) # for loss, acc correlation analysis
             
+    # remove outlier
+    if args.remove_outlier_acc:
+        acc_best = remove_outlier(acc_best)
+        acc_last = remove_outlier(acc_last)
+    
     # print
     current_server_id = os.environ['SERVER'] if 'SERVER' in os.environ else ''
     exp_str = '[%s-%s] ' % (current_server_id, _get_project_name()) + ', '.join(exp_id) # [138-CRD] 174550, 174554, 174558
@@ -269,6 +283,7 @@ parser.add_argument('--mark', type=str, default='last') # 'Epoch 240' or 'Step 1
 parser.add_argument('--present_data', type=str, default='', choices=['', 'last', 'best', 'last,best'])
 parser.add_argument('--acc_analysis', action='store_true')
 parser.add_argument('--corr_analysis', action='store_true')
+parser.add_argument('--remove_outlier_acc', action='store_true')
 parser.add_argument('--corr_stats', type=str, default='spearman', choices=['pearson', 'spearman', 'kendall'])
 args = parser.parse_args()
 def main():
