@@ -112,7 +112,7 @@ def parse_finish_time(log_f):
             finish_time = lines[-k].split('time:')[1].split('(')[0].strip() # example: predicted finish time: 2020/10/25-08:21 (speed: 314.98s per timing)
             return finish_time[5:] # example: 10/25-08:21
 
-def remove_outlier_acc(acc_list, index=None):
+def remove_outlier(acc_list, index=None):
     std = np.std(acc_list)
     mean = np.mean(acc_list)
     output = []
