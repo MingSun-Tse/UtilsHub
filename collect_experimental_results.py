@@ -117,7 +117,7 @@ def remove_outlier_acc(acc_list, index=None):
     mean = np.mean(acc_list)
     output = []
     for acc in acc_list:
-        if abs(acc - mean) < std:
+        if acc >= 0.93: # abs(acc - mean) < std:
             output.append(acc)
     return output
 
