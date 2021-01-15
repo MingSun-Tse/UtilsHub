@@ -192,8 +192,8 @@ class PresetLRScheduler(object):
         self.decay_schedule = {}
         for k, v in decay_schedule.items(): # a dict, example: {"0":0.001, "30":0.00001, "45":0.000001}
             self.decay_schedule[int(k)] = v
-        print('Using a preset learning rate schedule:')
-        print(self.decay_schedule)
+        # print('Using a preset learning rate schedule:')
+        # print(self.decay_schedule)
 
     def __call__(self, optimizer, e):
         epochs = list(self.decay_schedule.keys())
