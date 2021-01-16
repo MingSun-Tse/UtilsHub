@@ -49,7 +49,7 @@ for line in open(inFile):
             final_test_loss.append(_get_value(line, 'last5_test_loss'))
             final_test_acc.append(_get_value(line, 'last5_test_acc'))
 
-if len(final_train_loss) == len(pruned_train_loss) + 1:
+if len(pruned_train_loss) == len(final_train_loss) + 1:
     pruned_train_loss = pruned_train_loss[:-1]
 
 # corr analysis
