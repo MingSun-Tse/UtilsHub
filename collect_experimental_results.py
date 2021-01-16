@@ -267,10 +267,17 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
         matprint(pval)
 
         # plot a scatter to see correlation
-        fig, ax = plt.subplots()
-        ax.scatter(loss_train_just_finished_prune, loss_train_after_ft)
-        ax.set_xlabel('loss_train_just_finished_prune')
-        ax.set_ylabel('loss_train_after_ft')
+        fig, ax = plt.subplots(1, 3, figsize=(10, 3))
+        ax[0].scatter(loss_train_just_finished_prune, loss_train_after_ft)
+        ax[0].set_xlabel('loss_train_just_finished_prune')
+        ax[0].set_ylabel('loss_train_after_ft')
+        ax[1].scatter(loss_train_just_finished_prune, loss_test_after_ft)
+        ax[1].set_xlabel('loss_train_just_finished_prune')
+        ax[1].set_ylabel('loss_test_after_ft')
+        ax[2].scatter(loss_train_after_ft, loss_test_after_ft)
+        ax[2].set_xlabel('loss_train_after_ft')
+        ax[2].set_ylabel('loss_test_after_ft')
+        fig.tight_layout()
         fig.savefig(args.out_plot_path, dpi=200)
 
 
