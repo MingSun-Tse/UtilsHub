@@ -5,6 +5,7 @@ from scipy import stats
 import glob
 import argparse
 from accuracy_analyzer import AccuracyAnalyzer
+import matplotlib.pyplot as plt
 pjoin = os.path.join
 
 def _get_value(line, key, type_func=float, exact_key=False):
@@ -265,6 +266,14 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
         print('------------------ p-value: ------------------')
         matprint(pval)
 
+        # plot a scatter to see correlation
+        fig, ax = plt.subplots()
+        ax.scatter(loss_train_just_finished_prune, loss_train_after_ft)
+        ax.set_xlabel('loss_train_just_finished_prune')
+        ax.set_ylabel('loss_train_after_ft')
+        fig.savefig(args.out_plot_path, dpi=200)
+
+
 
 def matprint(mat, fmt="g"):
     try:
@@ -285,6 +294,7 @@ parser.add_argument('--acc_analysis', action='store_true')
 parser.add_argument('--corr_analysis', action='store_true')
 parser.add_argument('--remove_outlier_acc', action='store_true')
 parser.add_argument('--corr_stats', type=str, default='spearman', choices=['pearson', 'spearman', 'kendall'])
+parser.add_argument('--out_plot_path', type=str, default='plot.jpg')
 args = parser.parse_args()
 def main():
     '''Usage:
