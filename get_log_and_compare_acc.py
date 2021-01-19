@@ -3,7 +3,7 @@ import shutil as sh
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
-import math
+import math, argparse
 
 '''Usage Example:
     python get_log_and_compare_acc.py 138-DAFL-120845 138-DAFL-120835 5-CRD-070245
@@ -20,9 +20,14 @@ SERVER = {
 }
 
 def smooth(L, window=50):
+    if window == 1: return L
     num = len(L)
-    L1 = list(L[:window]) + list(L)
-    out = [np.average(L1[i : i + window]) for i in range(num)]
+    out = []
+    for i in range(num):
+        if i < window:
+            out.append(np.mean(L[:i+1]))
+        else:
+            out.append(np.mean(L[i+1-window:i+1]))
     return np.array(out) if isinstance(L, np.ndarray) else out
 
 def _get_ExpID_from_path():
@@ -43,7 +48,7 @@ def _get_value(line_seg, key, type_func=float):
         value = type_func(line_seg[i + 2]) # example: "Acc = 0.7"
     return value
 
-def _get_value_from_log(log, key):
+def _get_value_from_log(log, key, is_acc=True):
     '''Plot some item in a log file
     Example: Acc1 = 0.75 xxx Step xxx
     '''
@@ -52,7 +57,7 @@ def _get_value_from_log(log, key):
         if key in line:
             line_seg = line.strip().split()
             v = _get_value(line_seg, key, type_func=float)
-            if v > 1:
+            if is_acc and v > 1:
                 v = v / 100.0 # use accuracy in range [0, 1]
             value.append(v)
     return value
@@ -67,38 +72,52 @@ def _fetch_log_file(server, project, log_id):
     return log_file
 
 #################################
-value = []
-log_ids = []
-window = 1
-for arg in sys.argv[1:]:
-    if "-" not in arg:
-        window = int(arg)
-    else:
-        server, *project, log_id = arg.split('-') # arg example: 202-CRD-002234. This means, we want the log on machine 202, project CRD, log_id 002234
-        project = '-'.join(project)
-        server = '%03d' % int(server)
-        local_log_files = [x for x in os.listdir('./') if x.startswith('log_') and x.endswith('.txt')]
-        
-        # get log file
-        log_file = ''
-        for f in local_log_files:
-            if log_id in f:
-                log_file = f
-                break
-        if log_file == '':
-            log_file = _fetch_log_file(server, project, log_id)
-        
-        # parsing from log file
-        v = _get_value_from_log(log_file, 'Acc1')
-        value.append(v)
-        log_ids.append(arg)
+parser = argparse.ArgumentParser()
+parser.add_argument('--server', '-s', type=str, required=True, help='server name')
+parser.add_argument('--project', '-p', type=str, required=True, help='project name') 
+parser.add_argument('--log_ids', type=str, required=True, help='example: "000012,000245"')
+parser.add_argument('--window', type=int, default=1)
+args = parser.parse_args()
 
-min_len = np.min([len(v) for v in value])
-for v, log_id in zip(value, log_ids):
+acc, loss = [], []
+log_ids = args.log_ids.split(',')
+for log_id in log_ids:
+    # get log file
+    local_log_files = [x for x in os.listdir('./') if x.startswith('log_') and x.endswith('.txt')]
+    log_file = ''
+    for f in local_log_files:
+        if log_id in f:
+            log_file = f
+            break
+    if log_file == '':
+        log_file = _fetch_log_file(args.server, args.project, log_id)
+    
+    # parsing from log file ------------------------
+    # options = Loss_train, Loss_test, Acc1_train, Acc1 etc. (You may need to modify this manually to your need)
+    v_loss = _get_value_from_log(log_file, 'Loss_train', is_acc=False)
+    v_acc = _get_value_from_log(log_file, 'Acc1')
+    # ----------------------------------------------
+    acc.append(v_acc)
+    loss.append(v_loss)
+
+min_len = np.min([len(v) for v in acc])
+fig, ax = plt.subplots()
+ax.set_ylabel('Loss')
+ax2 = ax.twinx()
+ax2.set_ylabel('Acc1')
+for loss_, acc_, log_id in zip(loss, acc, log_ids):
     step = 1 # int(round(len(v) * 1.0  / min_len))
-    v = v[::step]
-    v = smooth(v, window=window)
-    plt.plot(v, label=log_id)
+
+    loss_ = loss_[1:]
+    loss_[::step] = smooth(loss_[::step], window=args.window)
+    ax.plot(loss_, label=log_id + ' Loss', linestyle='dashed')
+    
+    # acc_[::step] = smooth(acc_[::step], window=args.window)
+    # ax2.plot(acc_, label=log_id + ' Acc1', linestyle='solid')
+
+ax.legend()
+ax2.legend(loc=2)
+
+fig.tight_layout()
 plt.grid()
-plt.legend()
 plt.show()
