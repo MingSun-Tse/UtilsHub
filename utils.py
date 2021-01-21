@@ -5,6 +5,7 @@ from torch.utils.data import Dataset
 import torch.nn.functional as F
 import torchvision
 from torch.autograd import Variable
+from torch.autograd.gradcheck import zero_gradients
 from pprint import pprint
 import time, math, os, sys, copy, numpy as np, shutil as sh
 import matplotlib.pyplot as plt
@@ -24,6 +25,15 @@ def _weights_init(m):
         if m.weight is not None:
             m.weight.data.fill_(1.0)
             m.bias.data.zero_()
+
+def _weights_init_orthogonal(m):
+    if isinstance(m, (nn.Conv2d, nn.Linear)):
+        init.orthogonal_(m.weight)
+    elif isinstance(m, nn.BatchNorm2d):
+        if m.weight is not None:
+            m.weight.data.fill_(1.0)
+            m.bias.data.zero_()
+
 
 # refer to: https://github.com/Eric-mingjie/rethinking-network-pruning/blob/master/imagenet/l1-norm-pruning/compute_flops.py
 def get_n_params(model):
@@ -771,6 +781,7 @@ def visualize_filter(layer, layer_id, save_dir, n_filter_plot=16, n_channel_plot
             fig.savefig(save_path + ext, bbox_inches='tight')
             plt.close(fig)
 
+
 def visualize_feature_map(fm, layer_id, save_dir, n_channel_plot=16, pick_mode='rand', plot_abs=True, prefix='', ext='.pdf'):
     fm = fm.clone().detach()
     fm = fm.data.cpu().numpy()[0] # shape: [N, C, H, W], N is batch size. Default: batch size should be 1
@@ -807,6 +818,7 @@ def visualize_feature_map(fm, layer_id, save_dir, n_channel_plot=16, pick_mode='
         fig.savefig(save_path + ext, bbox_inches='tight')
         plt.close(fig)
 
+
 def add_noise_to_model(model, std=0.01):
     model = copy.deepcopy(model) # do not modify the original model
     for name, module in model.named_modules():
@@ -814,3 +826,31 @@ def add_noise_to_model(model, std=0.01):
             w = module.weight
             w.data += torch.randn_like(w) * std
     return model
+
+
+# Refer to: https://github.com/ast0414/adversarial-example/blob/26ee4144a1771d3a565285e0a631056a6f42d49c/craft.py#L6
+def compute_jacobian(inputs, output):
+	"""
+	:param inputs: Batch X Size (e.g. Depth X Width X Height)
+	:param output: Batch X Classes
+	:return: jacobian: Batch X Classes X Size
+	"""
+	assert inputs.requires_grad
+
+	num_classes = output.size()[1]
+
+	jacobian = torch.zeros(num_classes, *inputs.size())
+	grad_output = torch.zeros(*output.size())
+	if inputs.is_cuda:
+		grad_output = grad_output.cuda()
+		jacobian = jacobian.cuda()
+
+	for i in range(num_classes):
+		zero_gradients(inputs)
+		grad_output.zero_()
+		grad_output[:, i] = 1
+		output.backward(grad_output, retain_graph=True)
+		jacobian[i] = inputs.grad.data
+
+	return torch.transpose(jacobian, dim0=0, dim1=1)
+
