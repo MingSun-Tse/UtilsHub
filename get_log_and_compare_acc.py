@@ -89,7 +89,7 @@ for arg in sys.argv[1:]:
             log_file = _fetch_log_file(server, project, log_id)
         
         # parsing from log file
-        v = _get_value_from_log(log_file, 'Acc1')
+        v = _get_value_from_log(log_file, 'Loss_train')
         value.append(v)
         log_ids.append(arg)
 
