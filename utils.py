@@ -26,9 +26,9 @@ def _weights_init(m):
             m.weight.data.fill_(1.0)
             m.bias.data.zero_()
 
-def _weights_init_orthogonal(m):
+def _weights_init_orthogonal(m, act='relu'):
     if isinstance(m, (nn.Conv2d, nn.Linear)):
-        init.orthogonal_(m.weight)
+        init.orthogonal_(m.weight, gain=init.calculate_gain(act))
     elif isinstance(m, nn.BatchNorm2d):
         if m.weight is not None:
             m.weight.data.fill_(1.0)
@@ -854,3 +854,18 @@ def compute_jacobian(inputs, output):
 
 	return torch.transpose(jacobian, dim0=0, dim1=1)
 
+def get_jacobian_singular_values(model, data_loader, num_classes, n_loop=20, print_func=print):
+    jsv = []
+    for i, (images, target) in enumerate(data_loader):
+        if i < n_loop:
+            images, target = images.cuda(), target.cuda()
+            batch_size = images.size(0)
+            images.requires_grad = True # for Jacobian computation
+            output = model(images)
+            jacobian = compute_jacobian(images, output) # shape [batch_size, num_classes, num_channels, input_width, input_height]
+            jacobian = jacobian.view(batch_size, num_classes, -1)
+            u, s, v = torch.svd(jacobian)
+            jsv.append(s.data.cpu().numpy())
+            print_func('[%3d/%3d] calculating Jacobian...' % (i, len(data_loader)))
+    jsv = np.concatenate(jsv)
+    return jsv
