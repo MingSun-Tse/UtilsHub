@@ -1,7 +1,20 @@
-from utils import parse_acc_log
 from collections import OrderedDict
 import numpy as np
 import sys, glob
+
+# parse wanted value from accuracy print log
+def parse_acc_log(line, key, type_func=float):
+    line_seg = line.strip().lower().split()
+    for i in range(len(line_seg)):
+        if key in line_seg[i]:
+            break
+    if i == len(line_seg) - 1:
+        return None # did not find the <key> in this line
+    try:
+        value = type_func(line_seg[i+1])
+    except:
+        value = type_func(line_seg[i+2])
+    return value
 
 class AccuracyAnalyzer():
     def __init__(self, log_path):
