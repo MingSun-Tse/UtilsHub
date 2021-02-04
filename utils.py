@@ -15,6 +15,8 @@ import glob
 from PIL import Image
 import json, yaml
 import pandas as pd
+from scipy.spatial import cKDTree
+from scipy.special import gamma, digamma
 
 def _weights_init(m):
     if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
@@ -871,3 +873,17 @@ def get_jacobian_singular_values(model, data_loader, num_classes, n_loop=20, pri
             print_func('[%3d/%3d] calculating Jacobian...' % (i, len(data_loader)))
     jsv = np.concatenate(jsv)
     return jsv
+
+
+def approximate_entropy(X, num_bins=10, esp=1e-30):
+    '''X shape: [num_sample, n_var], numpy array.
+    '''
+    entropy = []
+    for di in range(X.shape[1]):
+        samples = X[:, di]
+        bins = np.linspace(samples.min(), samples.max(), num=num_bins+1)
+        prob = np.histogram(samples, bins=bins, density=False)[0] / len(samples)
+        entropy.append((-np.log2(prob + esp) * prob).sum()) # esp for numerical stability when prob = 0
+    return np.mean(entropy)
+
+
