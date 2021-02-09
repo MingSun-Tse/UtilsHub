@@ -64,12 +64,13 @@ class AccuracyAnalyzer():
             max_len_lr = max(len(str(k)), max_len_lr) # eg, from 0.1 to 0.0001
         vals = list(self.lr_state.values())
         max_len_step = len(str(vals[-1][-1][0])) # eg, from 0 to 10000
-        format_str = 'lr %{}s (%{}d - %{}d) -- max_acc %6.4f | min_acc %6.4f | avg_acc %6.4f'.format(max_len_lr, max_len_step, max_len_step)
+        format_str = 'lr %{}s (%{}d ~ %{}d) -- max_acc %6.4f | min_acc %6.4f | avg_acc %6.4f | max_acc_step %d'.format(max_len_lr, max_len_step, max_len_step)
         for lr in self.lr_state.keys():
             lr_state = np.array(self.lr_state[lr])
             step = lr_state[:, 0]
             acc = lr_state[:, 1]
-            print_func(format_str % (lr, step[0], step[-1], acc.max(), acc.min(), acc.mean()))
+            max_acc_step = lr_state[np.argmax(lr_state[:, 1])][0]
+            print_func(format_str % (lr, step[0], step[-1], acc.max(), acc.min(), acc.mean(), max_acc_step))
     
     def plot(self):
         pass
