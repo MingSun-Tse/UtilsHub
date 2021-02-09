@@ -1,5 +1,4 @@
-import sys
-import os
+import sys, os, time
 import numpy as np
 from scipy import stats
 import glob
@@ -111,7 +110,7 @@ def parse_finish_time(log_f):
     for k in range(1, min(1000, len(lines))):
         if 'predicted finish time' in lines[-k].lower():
             finish_time = lines[-k].split('time:')[1].split('(')[0].strip() # example: predicted finish time: 2020/10/25-08:21 (speed: 314.98s per timing)
-            return finish_time[5:] # example: 10/25-08:21
+            return finish_time
 
 def remove_outlier(acc_list, index=None):
     std = np.std(acc_list)
@@ -148,14 +147,14 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
                 for k in range(1, len(lines) + 1):
                     if is_acc_line(lines[-k]):
                         acc_l, acc_b = parse_acc(lines[-k])
-                        time = parse_time(lines[-k])
+                        acc_time_ = parse_time(lines[-k])
                         break
             
             else: # mark is like "Epoch 240 (", which explicitly points out which epoch or step
                 for line in open(log_f, 'r'):
                     if is_acc_line(line) and mark in line:
+                        acc_time_ = parse_time(line)
                         acc_l, acc_b = parse_acc(line)
-                        time = parse_time(line)
                         break
 
             if acc_b == -1:
@@ -191,7 +190,7 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
             
             acc_last.append(acc_l)
             acc_best.append(acc_b)
-            acc_time.append(time)
+            acc_time.append(acc_time_)
             _, id, d = _get_exp_name_id(exp)
             exp_id.append(id)
             date.append(d)
@@ -216,7 +215,8 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
         print('[exp date: %s]' % date[-1])
         print(exp_str + ' -- ' + acc_str) # [115-CCL] 225022 -- 0.1926/0.4944 
         print('acc_time: %s' % acc_time[0])
-        print('fin_time: %s' % (finish_time[0]))
+        if finish_time[0] and time.localtime() < time.strptime(finish_time[0], '%Y/%m/%d-%H:%M'):
+            print('fin_time: %s' % (finish_time[0]))
         
     elif len(acc_last) > 1:
         acc_last_str = _make_acc_str(acc_last, num_digit=n_digit, present='last' in present_data) # 75.84, 75.63, 75.45 – 75.64 (0.16)
@@ -229,7 +229,8 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
             print('acc_time: %s' % acc_time)
         else:
             print('acc_time: %s -- Warning: acc times are different!' % acc_time)
-        print('fin_time: %s' % (finish_time))
+        if finish_time[-1] and time.localtime() < time.strptime(finish_time[-1], '%Y/%m/%d-%H:%M'):
+            print('fin_time: %s' % (finish_time))
 
     # accuracy analyzer
     if args.acc_analysis:
