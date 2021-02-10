@@ -19,7 +19,7 @@ from scipy.spatial import cKDTree
 from scipy.special import gamma, digamma
 
 def _weights_init(m):
-    if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
+    if isinstance(m, (nn.Conv2d, nn.Linear)):
         init.kaiming_normal(m.weight)
         if m.bias is not None:
             m.bias.data.fill_(0)
@@ -31,11 +31,57 @@ def _weights_init(m):
 def _weights_init_orthogonal(m, act='relu'):
     if isinstance(m, (nn.Conv2d, nn.Linear)):
         init.orthogonal_(m.weight, gain=init.calculate_gain(act))
+        if m.bias is not None:
+            m.bias.data.fill_(0)
     elif isinstance(m, nn.BatchNorm2d):
         if m.weight is not None:
             m.weight.data.fill_(1.0)
             m.bias.data.zero_()
 
+# Modify the orthogonal initialization
+# refer to: https://pytorch.org/docs/stable/_modules/torch/nn/init.html#orthogonal_
+def orthogonalize_weights(tensor, gain=1):
+    r"""Fills the input `Tensor` with a (semi) orthogonal matrix, as
+    described in `Exact solutions to the nonlinear dynamics of learning in deep
+    linear neural networks` - Saxe, A. et al. (2013). The input tensor must have
+    at least 2 dimensions, and for tensors with more than 2 dimensions the
+    trailing dimensions are flattened.
+
+    Args:
+        tensor: an n-dimensional `torch.Tensor`, where :math:`n \geq 2`
+        gain: optional scaling factor
+
+    Examples:
+        >>> w = torch.empty(3, 5)
+        >>> nn.init.orthogonal_(w)
+    """
+    tensor = tensor.clone().detach() # @mst: avoid modifying the original tensor
+
+    if tensor.ndimension() < 2:
+        raise ValueError("Only tensors with 2 or more dimensions are supported")
+
+    rows = tensor.size(0)
+    cols = tensor.numel() // rows
+    # flattened = tensor.new(rows, cols).normal_(0, 1)
+    flattened = tensor.view(rows, cols) # @mst: do NOT reinit the tensor
+
+    if rows < cols:
+        flattened.t_()
+
+    # Compute the qr factorization
+    q, r = torch.qr(flattened)
+    # Make Q uniform according to https://arxiv.org/pdf/math-ph/0609050.pdf
+    d = torch.diag(r, 0)
+    ph = d.sign()
+    q *= ph
+
+    if rows < cols:
+        q.t_()
+
+    with torch.no_grad():
+        tensor.view_as(q).copy_(q)
+        tensor.mul_(gain)
+    return tensor
 
 # refer to: https://github.com/Eric-mingjie/rethinking-network-pruning/blob/master/imagenet/l1-norm-pruning/compute_flops.py
 def get_n_params(model):
