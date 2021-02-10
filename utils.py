@@ -932,4 +932,41 @@ def approximate_entropy(X, num_bins=10, esp=1e-30):
         entropy.append((-np.log2(prob + esp) * prob).sum()) # esp for numerical stability when prob = 0
     return np.mean(entropy)
 
+# matplotlib utility functions
+def set_ax(ax):
+    '''This will modify ax in place.
+    '''
+    # set background
+    ax.grid(color='white')
+    ax.set_facecolor('whitesmoke')
 
+    # remove axis line
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+
+    # remove tick but keep the values
+    ax.xaxis.set_ticks_position('none')
+    ax.yaxis.set_ticks_position('none')
+
+def parse_value(line, key, type_func=float, exact_key=True):
+    '''Parse a line with the key 
+    '''
+    try:
+        if exact_key: # back compatibility
+            value = line.split(key)[1].strip().split()[0]
+            if value.endswith(')'): # hand-fix case: "Epoch 23)"
+                value = value[:-1] 
+            value = type_func(value)
+        else:
+            line_seg = line.split()
+            for i in range(len(line_seg)):
+                if key in line_seg[i]: # example: 'Acc1: 0.7'
+                    break
+            if i == len(line_seg) - 1:
+                return None # did not find the <key> in this line
+            value = type_func(line_seg[i + 1])
+        return value
+    except:
+        print('Got error for line: "%s". Please check.' % line)
