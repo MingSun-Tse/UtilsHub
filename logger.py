@@ -199,9 +199,9 @@ class Logger(object):
 
         # set up work folder
         self.ExpID = self.get_ExpID()
-        self.exps_dir = 'Experiments'
-        if self.args.get('exps_dir'):
-            self.exps_dir = self.args.exps_dir
+        self.Exps_Dir = 'Experiments'
+        if hasattr(self.args, 'Exps_Dir'):
+            self.Exps_Dir = self.args.Exps_Dir
         self.set_up_dir()
 
         self.log_printer = LogPrinter(
@@ -249,7 +249,7 @@ class Logger(object):
         return ExpID
 
     def set_up_dir(self):
-        project_path = pjoin("%s/%s_%s" % (self.exps_dir, self.args.project_name, self.ExpID))
+        project_path = pjoin("%s/%s_%s" % (self.Exps_Dir, self.args.project_name, self.ExpID))
         if hasattr(self.args, 'resume_ExpID') and self.args.resume_ExpID:
             project_path = get_project_path(self.args.resume_ExpID)
         if self.args.debug: # debug has the highest priority. If debug, all the things will be saved in Debug_dir
