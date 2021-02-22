@@ -233,8 +233,19 @@ def get_n_flops_(model=None, img_size=224, n_channel=3, count_adds=True):
             register_hooks(c)
 
     register_hooks(model)
-    input = Variable(torch.rand(1, n_channel, img_size, img_size))
-    model(input)
+    use_cuda = next(model.parameters()).is_cuda
+    input = torch.rand(1, n_channel, img_size, img_size)
+    if use_cuda:
+        input = input.cuda()
+    
+    # forward
+    try:
+        model(input)
+    except:
+        model(input, 2) 
+        # @mst (TODO): for SR network, there may be an extra argument for scale. Here set it to 2 to make it run normally. 
+        # -- An ugly solution. Probably will be improved later.
+    
     total_flops = (sum(list_conv) + sum(list_linear))
     if count_adds:
         total_flops *= 2
@@ -970,79 +981,3 @@ def parse_value(line, key, type_func=float, exact_key=True):
         return value
     except:
         print('Got error for line: "%s". Please check.' % line)
-
-class Layer:
-    def __init__(self, name, size, layer_index, res=False, layer_type=None):
-        self.name = name
-        self.size = []
-        for x in size:
-            self.size.append(x)
-        self.layer_index = layer_index
-        self.layer_type = layer_type
-        self.is_shortcut = True if "downsample" in name else False
-        if res:
-            self.stage, self.seq_index, self.block_index = self._get_various_index_by_name(name)
-    
-    def _get_various_index_by_name(self, name):
-        '''Get the indeces including stage, seq_ix, blk_ix.
-            Same stage means the same feature map size.
-        '''
-        global lastest_stage # an awkward impel, just for now
-        if name.startswith('module.'):
-            name = name[7:] # remove the prefix caused by pytorch data parallel
-
-        if "conv1" == name: # TODO: this might not be so safe
-            lastest_stage = 0
-            return 0, None, None
-        if "linear" in name or 'fc' in name: # Note: this can be risky. Check it fully. TODO: @mingsun-tse
-            return lastest_stage + 1, None, None # fc layer should always be the last layer
-        else:
-            try:
-                stage  = int(name.split(".")[0][-1]) # ONLY work for standard resnets. name example: layer2.2.conv1, layer4.0.downsample.0
-                seq_ix = int(name.split(".")[1])
-                if 'conv' in name.split(".")[-1]:
-                    blk_ix = int(name[-1]) - 1
-                else:
-                    blk_ix = -1 # shortcut layer  
-                lastest_stage = stage
-                return stage, seq_ix, blk_ix
-            except:
-                print('! Parsing the layer name failed: %s. Please check.' % name)
-
-class Layer_SR:
-    def __init__(self, name, size, layer_index, res=False, layer_type=None):
-        self.name = name
-        self.size = []
-        for x in size:
-            self.size.append(x)
-        self.layer_index = layer_index
-        self.layer_type = layer_type
-        self.is_shortcut = True if "downsample" in name else False
-        # if res:
-        #     self.stage, self.seq_index, self.block_index = self._get_various_index_by_name(name)
-    
-    def _get_various_index_by_name(self, name):
-        '''Get the indeces including stage, seq_ix, blk_ix.
-            Same stage means the same feature map size.
-        '''
-        global lastest_stage # an awkward impel, just for now
-        if name.startswith('module.'):
-            name = name[7:] # remove the prefix caused by pytorch data parallel
-
-        if "conv1" == name: # TODO: this might not be so safe
-            lastest_stage = 0
-            return 0, None, None
-        if "linear" in name or 'fc' in name: # Note: this can be risky. Check it fully. TODO: @mingsun-tse
-            return lastest_stage + 1, None, None # fc layer should always be the last layer
-        else:
-            try:
-                stage  = int(name.split(".")[0][-1]) # ONLY work for standard resnets. name example: layer2.2.conv1, layer4.0.downsample.0
-                seq_ix = int(name.split(".")[1])
-                if 'conv' in name.split(".")[-1]:
-                    blk_ix = int(name[-1]) - 1
-                else:
-                    blk_ix = -1 # shortcut layer  
-                lastest_stage = stage
-                return stage, seq_ix, blk_ix
-            except:
-                print('! Parsing the layer name failed: %s. Please check.' % name)
