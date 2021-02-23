@@ -981,3 +981,27 @@ def parse_value(line, key, type_func=float, exact_key=True):
         return value
     except:
         print('Got error for line: "%s". Please check.' % line)
+
+def to_tensor(x):
+    x = np.array(x)
+    x = torch.from_numpy(x).float()
+    return x
+
+def denormalize_image(x, mean, std):
+    '''x shape: [N, C, H, W], batch image
+    '''
+    x = x.cuda()
+    mean = to_tensor(mean).cuda()
+    std = to_tensor(std).cuda()
+    mean = mean.unsqueeze(0).unsqueeze(2).unsqueeze(3) # shape: [1, C, 1, 1]
+    std = std.unsqueeze(0).unsqueeze(2).unsqueeze(3)
+    x = std * x + mean
+    return x
+
+def make_one_hot(labels, C): # labels: [N]
+    '''turn a batch of labels to the one-hot form
+    '''
+    labels = labels.unsqueeze(1) # [N, 1]
+    one_hot = torch.zeros(labels.size(0), C).cuda()
+    target = one_hot.scatter_(1, labels, 1)
+    return target
