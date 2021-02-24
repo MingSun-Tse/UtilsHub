@@ -312,10 +312,9 @@ def strlist_to_list(sstr, ttype):
     if not sstr:
         return sstr
     out = []
-    if '[' in sstr:
-        sstr = sstr.split("[")[1].split("]")[0]
-    else:
-        sstr = sstr.strip()
+    sstr = sstr.strip()
+    if sstr.startswith('[') and sstr.endswith(']'):
+        sstr = sstr[1:-1]
     for x in sstr.split(','):
         x = x.strip()
         if x:
@@ -330,10 +329,9 @@ def strdict_to_dict(sstr, ttype):
     if not sstr:
         return sstr
     out = {}
-    if '{' in sstr:
-        sstr = sstr.split("{")[1].split("}")[0]
-    else:
-        sstr = sstr.strip()
+    sstr = sstr.strip()
+    if sstr.startswith('{') and sstr.endswith('}'):
+        sstr = sstr[1:-1]
     for x in sstr.split(','):
         x = x.strip()
         if x:
