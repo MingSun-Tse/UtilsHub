@@ -206,10 +206,16 @@ def get_n_flops(model=None, input_res=224, multiply_adds=True, n_channel=3):
     return total_flops
 
 # The above version is redundant. Get a neat version as follow.
-def get_n_flops_(model=None, img_size=224, n_channel=3, count_adds=True):
+def get_n_flops_(model=None, img_size=(224,224), n_channel=3, count_adds=True, idx_scale=None):
     '''Only count the FLOPs of conv and linear layers (no BN layers etc.). 
     Only count the weight computation (bias not included since it is negligible)
     '''
+    if hasattr(img_size, '__len__'):
+        height, width = img_size
+    else:
+        assert isinstance(img_size, int)
+        height, width = img_size, img_size
+
     model = copy.deepcopy(model)
     list_conv = []
     def conv_hook(self, input, output):
@@ -234,7 +240,7 @@ def get_n_flops_(model=None, img_size=224, n_channel=3, count_adds=True):
 
     register_hooks(model)
     use_cuda = next(model.parameters()).is_cuda
-    input = torch.rand(1, n_channel, img_size, img_size)
+    input = torch.rand(1, n_channel, height, width)
     if use_cuda:
         input = input.cuda()
     
@@ -242,7 +248,7 @@ def get_n_flops_(model=None, img_size=224, n_channel=3, count_adds=True):
     try:
         model(input)
     except:
-        model(input, 2) 
+        model(input, {'idx_scale': idx_scale})
         # @mst (TODO): for SR network, there may be an extra argument for scale. Here set it to 2 to make it run normally. 
         # -- An ugly solution. Probably will be improved later.
     
