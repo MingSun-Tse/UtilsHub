@@ -40,7 +40,7 @@ def _weights_init_orthogonal(m, act='relu'):
 
 # Modify the orthogonal initialization
 # refer to: https://pytorch.org/docs/stable/_modules/torch/nn/init.html#orthogonal_
-def orthogonalize_weights(tensor, gain=1):
+def orthogonalize_weights(tensor, act):
     r"""Fills the input `Tensor` with a (semi) orthogonal matrix, as
     described in `Exact solutions to the nonlinear dynamics of learning in deep
     linear neural networks` - Saxe, A. et al. (2013). The input tensor must have
@@ -56,6 +56,7 @@ def orthogonalize_weights(tensor, gain=1):
         >>> nn.init.orthogonal_(w)
     """
     tensor = tensor.clone().detach() # @mst: avoid modifying the original tensor
+    gain = init.calculate_gain(act)
 
     if tensor.ndimension() < 2:
         raise ValueError("Only tensors with 2 or more dimensions are supported")
@@ -69,11 +70,12 @@ def orthogonalize_weights(tensor, gain=1):
         flattened.t_()
 
     # Compute the qr factorization
-    q, r = torch.qr(flattened)
+    q, r = torch.qr(flattened) # q: (rows, cols), r: (cols, cols) if rows > cols.
+    
     # Make Q uniform according to https://arxiv.org/pdf/math-ph/0609050.pdf
-    d = torch.diag(r, 0)
+    d = torch.diag(r, 0) # d: (cols)
     ph = d.sign()
-    q *= ph
+    q *= ph # (rows, cols) * (cols) => (rows, cols)
 
     if rows < cols:
         q.t_()
@@ -82,6 +84,33 @@ def orthogonalize_weights(tensor, gain=1):
         tensor.view_as(q).copy_(q)
         tensor.mul_(gain)
     return tensor
+
+# refer to: https://github.com/JiJingYu/delta_orthogonal_init_pytorch/blob/master/demo.py
+def genOrthgonal(dim):
+    a = torch.zeros((dim, dim)).normal_(0, 1)
+    q, r = torch.qr(a)
+    d = torch.diag(r, 0).sign()
+    diag_size = d.size(0)
+    d_exp = d.view(1, diag_size).expand(diag_size, diag_size)
+    q.mul_(d_exp)
+    return q
+
+def delta_orthogonalize_weights(weights, act):
+    weights = copy.deepcopy(weights)
+    gain = init.calculate_gain(act)
+
+    rows = weights.size(0)
+    cols = weights.size(1)
+    if rows > cols:
+        print("In_filters should not be greater than out_filters.")
+    weights.data.fill_(0)
+    dim = max(rows, cols)
+    q = genOrthgonal(dim)
+    mid1 = weights.size(2) // 2
+    mid2 = weights.size(3) // 2
+    weights[:, :, mid1, mid2] = q[:weights.size(0), :weights.size(1)]
+    weights.mul_(gain)
+    return weights
 
 # refer to: https://github.com/Eric-mingjie/rethinking-network-pruning/blob/master/imagenet/l1-norm-pruning/compute_flops.py
 def get_n_params(model):
@@ -922,8 +951,8 @@ def get_jacobian_singular_values(model, data_loader, num_classes, n_loop=20, pri
             images.requires_grad = True # for Jacobian computation
             output = model(images)
             jacobian = compute_jacobian(images, output) # shape [batch_size, num_classes, num_channels, input_width, input_height]
-            jacobian = jacobian.view(batch_size, num_classes, -1)
-            u, s, v = torch.svd(jacobian)
+            jacobian = jacobian.view(batch_size, num_classes, -1) # shape [batch_size, num_classes, num_channels*input_width*input_height]
+            u, s, v = torch.svd(jacobian) # u: [batch_size, num_channels*input_width*input_height, num_classes], s: [batch_size, num_classes], v: [batch_size, num_channels*input_width*input_height, num_classes]
             jsv.append(s.data.cpu().numpy())
             print_func('[%3d/%3d] calculating Jacobian...' % (i, len(data_loader)))
     jsv = np.concatenate(jsv)
