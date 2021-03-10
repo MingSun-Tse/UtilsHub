@@ -215,8 +215,6 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
         print('[exp date: %s]' % date[-1])
         print(exp_str + ' -- ' + acc_str) # [115-CCL] 225022 -- 0.1926/0.4944 
         print('acc_time: %s' % acc_time[0])
-        if finish_time[0] and time.localtime() < time.strptime(finish_time[0], '%Y/%m/%d-%H:%M'):
-            print('fin_time: %s' % (finish_time[0]))
         
     elif len(acc_last) > 1:
         acc_last_str = _make_acc_str(acc_last, num_digit=n_digit, present='last' in present_data) # 75.84, 75.63, 75.45 – 75.64 (0.16)
@@ -229,8 +227,14 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
             print('acc_time: %s' % acc_time)
         else:
             print('acc_time: %s -- Warning: acc times are different!' % acc_time)
-        if finish_time[-1] and time.localtime() < time.strptime(finish_time[-1], '%Y/%m/%d-%H:%M'):
-            print('fin_time: %s' % (finish_time))
+    
+    print_ft = False
+    for ft in finish_time:
+        if ft and ('predict' in ft or time.localtime() < time.strptime(ft, '%Y/%m/%d-%H:%M')):
+            print_ft = True
+            break
+    if print_ft:
+        print('fin_time: %s' % (finish_time))
 
     # accuracy analyzer
     if args.acc_analysis:
