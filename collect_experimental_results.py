@@ -1,7 +1,7 @@
 import sys, os, time
 import numpy as np
 from scipy import stats
-import glob
+import glob, copy
 import argparse
 from accuracy_analyzer import AccuracyAnalyzer
 import matplotlib.pyplot as plt
@@ -112,14 +112,13 @@ def parse_finish_time(log_f):
             finish_time = lines[-k].split('time:')[1].split('(')[0].strip() # example: predicted finish time: 2020/10/25-08:21 (speed: 314.98s per timing)
             return finish_time
 
-def remove_outlier(acc_list, index=None):
-    std = np.std(acc_list)
-    mean = np.mean(acc_list)
-    output = []
-    for acc in acc_list:
-        if acc >= 0.93: # abs(acc - mean) < std:
-            output.append(acc)
-    return output
+def remove_outlier(metric, *lists):
+    metric = copy.deepcopy(metric)
+    mean, std = np.mean(metric), np.std(metric)
+    for ix in range(len(metric)):
+        if abs(metric[ix] - mean) > std: # variation larger than std, remove it.
+            for l in lists:
+                l.pop(ix)
 
 def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
     '''In <all_exps>, pick those with <name> in their name for accuracy collection.
@@ -200,8 +199,9 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
             
     # remove outlier
     if args.remove_outlier_acc:
-        acc_best = remove_outlier(acc_best)
-        acc_last = remove_outlier(acc_last)
+        n_exp_original = len(acc_best)
+        remove_outlier(acc_best, acc_best, acc_last, exp_id, finish_time, date, acc_time)
+        n_outlier = n_exp_original - len(acc_best)
     
     # print
     current_server_id = os.environ['SERVER'] if 'SERVER' in os.environ else ''
@@ -235,6 +235,9 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
             break
     if print_ft:
         print('fin_time: %s' % (finish_time))
+
+    if args.remove_outlier_acc:
+        print('Note, %d outliers have been not included' % n_outlier)
 
     # accuracy analyzer
     if args.acc_analysis:
