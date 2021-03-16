@@ -115,8 +115,8 @@ def parse_finish_time(log_f):
 def remove_outlier(metric, *lists):
     metric = copy.deepcopy(metric)
     mean, std = np.mean(metric), np.std(metric)
-    for ix in range(len(metric)):
-        if abs(metric[ix] - mean) > std: # variation larger than std, remove it.
+    for ix in range(len(metric)-1, -1, -1):
+        if abs(metric[ix] - mean) > args.outlier_thresh: # variation larger than std, remove it.
             for l in lists:
                 l.pop(ix)
 
@@ -308,6 +308,7 @@ parser.add_argument('--present_data', type=str, default='', choices=['', 'last',
 parser.add_argument('--acc_analysis', action='store_true')
 parser.add_argument('--corr_analysis', action='store_true')
 parser.add_argument('--remove_outlier_acc', action='store_true')
+parser.add_argument('--outlier_thresh', type=float, default=0.5)
 parser.add_argument('--corr_stats', type=str, default='spearman', choices=['pearson', 'spearman', 'kendall'])
 parser.add_argument('--out_plot_path', type=str, default='plot.jpg')
 args = parser.parse_args()
