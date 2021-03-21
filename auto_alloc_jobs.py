@@ -106,10 +106,11 @@ class JobManager():
     def get_vacant_GPU(self):
         '''run 3 times to get a stable result
         '''
+        unavailable_gpus = args.unavailable_gpus.split(',')
         vacant_gpus_1 = self.get_vacant_GPU_once()
         vacant_gpus_2 = self.get_vacant_GPU_once()
         vacant_gpus_3 = self.get_vacant_GPU_once()
-        vacant_gpus = [x for x in vacant_gpus_1 if x in vacant_gpus_2 and x in vacant_gpus_3]
+        vacant_gpus = [x for x in vacant_gpus_1 if x in vacant_gpus_2 and x in vacant_gpus_3 and (x not in unavailable_gpus)]
         return vacant_gpus
     
     def run(self):
@@ -145,6 +146,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--script', type=str, required=True)
 parser.add_argument('--times', type=int, default=1, help='each experiment will be run by <times> times')
 parser.add_argument('--exclude', type=str, default='', help='exclude scripts that are not expected to run. separated by comma. example: wrn,resnet56')
+parser.add_argument('--unavailable_gpus', type=str, default=',', help='gpus that are unavailable')
 args = parser.parse_args()
 def main():
     args.exclude = args.exclude.split(',')
