@@ -71,7 +71,7 @@ def orthogonalize_weights(tensor, act):
 
     # Compute the qr factorization
     q, r = torch.qr(flattened) # q: (rows, cols), r: (cols, cols) if rows > cols.
-    
+
     # Make Q uniform according to https://arxiv.org/pdf/math-ph/0609050.pdf
     d = torch.diag(r, 0) # d: (cols)
     ph = d.sign()
@@ -739,7 +739,8 @@ class Timer():
         left_t = sec_per_epoch * (self.total_epoch - len(interval))
         finish_t = left_t + time.time()
         finish_t = time.strftime('%Y/%m/%d-%H:%M', time.localtime(finish_t))
-        return finish_t + ' (speed: %.2fs per timing)' % sec_per_epoch
+        total_t = '%.2fh' % ((np.sum(interval) + left_t) / 3600.)
+        return finish_t + ' (speed: %.2fs per timing, total_time: %s)' % (sec_per_epoch, total_t)
     
     def __call__(self):
         return(self.predict_finish_time())
