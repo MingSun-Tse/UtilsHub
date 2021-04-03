@@ -17,6 +17,8 @@ import json, yaml
 import pandas as pd
 from scipy.spatial import cKDTree
 from scipy.special import gamma, digamma
+import lmdb
+import pickle
 
 def _weights_init(m):
     if isinstance(m, (nn.Conv2d, nn.Linear)):
@@ -755,6 +757,22 @@ class Dataset_npy_batch(Dataset):
         label = self.data[index][1]
         label = torch.LongTensor([label])[0]
         return img.squeeze(0), label
+    def __len__(self):
+        return len(self.data)
+
+class Dataset_lmdb_batch(Dataset):
+    '''Dataset to load a lmdb data file.
+    '''
+    def __init__(self, lmdb_path, transform):
+        env = lmdb.open(lmdb_path, readonly=True)
+        with env.begin() as txn:
+            self.data = [value for key, value in txn.cursor()]
+        self.transform = transform
+    def __getitem__(self, index):
+        img, label = pickle.loads(self.data[index]) # PIL image
+        if self.transform:
+            img = self.transform(img)
+        return img, label
     def __len__(self):
         return len(self.data)
 
