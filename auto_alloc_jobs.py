@@ -126,7 +126,10 @@ class JobManager():
                 current_time = time.strftime("%Y/%m/%d-%H:%M:%S")
                 if len(vacant_gpus) > 0:
                     gpu = vacant_gpus[0]
-                    new_script = 'CUDA_VISIBLE_DEVICES=%s nohup %s > /dev/null 2>&1 &' % (gpu, job)
+                    if args.debug:
+                        new_script = 'CUDA_VISIBLE_DEVICES=%s %s --debug' % (gpu, job)
+                    else:
+                        new_script = 'CUDA_VISIBLE_DEVICES=%s nohup %s > /dev/null 2>&1 &' % (gpu, job)
                     os.system(new_script)
                     n_executed += 1
                     print('[%s] ==> Found vacant GPUs: %s' % (current_time, ' '.join(vacant_gpus)))
@@ -147,6 +150,7 @@ parser.add_argument('--script', type=str, required=True)
 parser.add_argument('--times', type=int, default=1, help='each experiment will be run by <times> times')
 parser.add_argument('--exclude', type=str, default='', help='exclude scripts that are not expected to run. separated by comma. example: wrn,resnet56')
 parser.add_argument('--unavailable_gpus', type=str, default=',', help='gpus that are unavailable')
+parser.add_argument('--debug', action='store_true')
 args = parser.parse_args()
 def main():
     args.exclude = args.exclude.split(',')
