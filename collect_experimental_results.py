@@ -239,6 +239,10 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
     if args.remove_outlier_acc:
         print('Note, %d outliers have been not included' % n_outlier)
 
+    # print acc of the just pruned model
+    if len(acc1_test_just_finished_prune):
+        print(f'test_acc_just_pruned: {np.mean(acc1_test_just_finished_prune):.4f} ({np.std(acc1_test_just_finished_prune):.4f})')
+
     # accuracy analyzer
     if args.acc_analysis:
         for exp in all_exps:
