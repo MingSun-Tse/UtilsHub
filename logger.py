@@ -265,6 +265,7 @@ class Logger(object):
         if self.args.debug: # debug has the highest priority. If debug, all the things will be saved in Debug_dir
             project_path = "Debug_Dir"
 
+        self.exp_path     = project_path
         self.weights_path = pjoin(project_path, "weights")
         self.gen_img_path = pjoin(project_path, "gen_img")
         self.cache_path   = pjoin(project_path, ".caches")
