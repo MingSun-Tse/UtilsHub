@@ -165,7 +165,7 @@ class JobManager():
                     time.sleep(10) # wait for 10 seconds so that the GPU is fully activated
                     break
                 else:
-                    print('[%s] ==> Found no vacant GPUs. Wait for another 60 seconds. %d jobs left.' % (current_time, n_job - 1))
+                    print('[%s] ==> Found no vacant GPUs. Wait for another 60 seconds. %d jobs left.' % (current_time, n_job))
                     time.sleep(60)
                 
             # after the job is run successfully, update jobs txt
