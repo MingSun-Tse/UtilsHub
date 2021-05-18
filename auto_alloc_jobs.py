@@ -49,14 +49,13 @@ def is_exclude(line):
             exclude = True
     return exclude
 
-class JobManager():
-    def __init__(self, f):
-        self.script_f = f
+def strftime():
+    return time.strftime("%Y/%m/%d-%H:%M:%S")
 
-    def read_jobs(self):
-        jobs = []
-        var_dict = {}
-        lines = remove_comments(self.script_f)
+class JobManager():
+    def __init__(self, script_f):
+        jobs, var_dict = [], {}
+        lines = remove_comments(script_f)
         for line in lines:
             line = line.strip()
             if line == '' or line.startswith('#'):
@@ -74,10 +73,36 @@ class JobManager():
             if line.startswith('python') or line.startswith('sh'):
                 new_line = replace_var(line, var_dict)
                 if not is_exclude(new_line):
-                    print('Got a job: "%s", append it to the pool' % new_line)
+                    print(f'[{strftime()}] Got a job: "%s"' % new_line)
                     jobs.append(new_line)
-        return jobs
         
+        jobs = jobs * args.times # repeat
+        print(f'[{strftime()}] Jobs will be repeated by {args.times} times.')
+
+        self.jobs_txt = '.auto_run_jobs_%s.txt' % time.time()
+        with open(self.jobs_txt, 'w') as f:
+            for ix, j in enumerate(jobs):
+                f.write('%s ==> %s\n\n' % (ix, j))
+        print(f'[{strftime()}] Save jobs to {self.jobs_txt}')
+
+    def read_jobs(self):
+        jobs = []
+        for line in open(self.jobs_txt):
+            line = line.strip()
+            if line and (not line.startswith('[Done]')):
+                jobs.append(line)
+        return jobs
+    
+    def update_jobs_txt(self, job):
+        new_txt = ''
+        for line in open(self.jobs_txt):
+            line = line.strip()
+            if line == job:
+                line = '[Done] ' + line
+            new_txt += line + '\n'
+        with open(self.jobs_txt, 'w') as f:
+            f.write(new_txt)
+
     def get_vacant_GPU_once(self):
         vacant_gpus = []
         get_gpu_successully = False
@@ -114,34 +139,37 @@ class JobManager():
         return vacant_gpus
     
     def run(self):
-        jobs = self.read_jobs()
-        jobs = jobs * args.times
-        n_job = len(jobs)
-        print('[%s] Jobs will be repeated by %d times. Total job number: %d' % (time.strftime("%Y/%m/%d-%H:%M:%S"), args.times, n_job))
-        n_executed = 0
-        timer = Timer(n_job)
-        for job in jobs:
+        while 1:
+            jobs = self.read_jobs()
+            n_job = len(jobs)
+            if n_job == 0:
+                print(f'{strftime()} ==> All jobs have been executed. Congrats!')
+                os.remove(self.jobs_txt)
+                exit(0)
+
+            # find a gpu to run the job
+            job = jobs[0]
             while 1:
                 vacant_gpus = self.get_vacant_GPU()
-                current_time = time.strftime("%Y/%m/%d-%H:%M:%S")
+                current_time = strftime()
                 if len(vacant_gpus) > 0:
                     gpu = vacant_gpus[0]
+                    core_script = job.split('==>')[1].strip()
                     if args.debug:
-                        new_script = 'CUDA_VISIBLE_DEVICES=%s %s --debug' % (gpu, job)
+                        new_script = 'CUDA_VISIBLE_DEVICES=%s %s --debug' % (gpu, core_script)
                     else:
-                        new_script = 'CUDA_VISIBLE_DEVICES=%s nohup %s > /dev/null 2>&1 &' % (gpu, job)
+                        new_script = 'CUDA_VISIBLE_DEVICES=%s nohup %s > /dev/null 2>&1 &' % (gpu, core_script)
                     os.system(new_script)
-                    n_executed += 1
                     print('[%s] ==> Found vacant GPUs: %s' % (current_time, ' '.join(vacant_gpus)))
-                    print('[%s] ==> Run job on GPU %s: [%s] %d jobs left' % (current_time, gpu, new_script, n_job - n_executed))
-                    print('[%s] ==> Predicted finish time: %s\n' % (current_time, timer()))
+                    print('[%s] ==> Run the job on GPU %s: [%s] %d jobs left' % (current_time, gpu, new_script, n_job - 1))
                     time.sleep(10) # wait for 10 seconds so that the GPU is fully activated
                     break
                 else:
-                    print('[%s] ==> Found no vacant GPUs. Wait for another 60 seconds. %d jobs left.' % (current_time, n_job - n_executed))
+                    print('[%s] ==> Found no vacant GPUs. Wait for another 60 seconds. %d jobs left.' % (current_time, n_job - 1))
                     time.sleep(60)
-        print('==> All jobs have been executed. Congrats!')
-
+                
+            # after the job is run successfully, update jobs txt
+            self.update_jobs_txt(job)
 
 '''Usage: python auto_alloc_jobs.py script.sh
 '''
