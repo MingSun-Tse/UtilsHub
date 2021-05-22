@@ -1,10 +1,13 @@
 import sys
 import os
 '''Usage:
-    python <path_to_this_file>  <path_to_imagenet_subset_200> <path_to_imagenet>
+    python  <path_to_this_file>  <path_to_imagenet_subset_200>  <path_to_imagenet>
 
 Example:
-    
+    in data, there is "imagenet_subset_200", run:
+    python ../../UtilsHub/rename_soft_link_for_imagenet_subset_200.py imagenet_subset_200 /media/yulun/1TSSD1/Huan_data/ILSVRC/Data/CLS-LOC
+
+Last update: 05/22/2021 @mingsun-tse
 '''
 inDir_subset = sys.argv[1] # imagenet subset 200 folder
 inDir_full = sys.argv[2] # imagenet folder
