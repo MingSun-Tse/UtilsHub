@@ -1,19 +1,23 @@
 import sys
 import os
 '''Usage:
-In the 'tools' dir, run "python <this_file>  ../data/imagenet_subset_200".
-Note: the 'data' dir should have 'imagenet' already set up.
+    python <path_to_this_file>  <path_to_imagenet_subset_200> <path_to_imagenet>
+
+Example:
+    
 '''
-inDir = sys.argv[1] # imagenet subset 200 folder
-train_path = '%s/train' % inDir
-val_path = '%s/val' % inDir
+inDir_subset = sys.argv[1] # imagenet subset 200 folder
+inDir_full = sys.argv[2] # imagenet folder
+
+train_path = '%s/train' % inDir_subset
+val_path = '%s/val' % inDir_subset
 
 for link in os.listdir(train_path):
     os.unlink('%s/%s' % (train_path, link))
-    script = 'ln -s ../../imagenet/train/%s %s/' % (link, train_path)
+    script = 'ln -s %s/train/%s %s/' % (inDir_full, link, train_path)
     os.system(script)
 
 for link in os.listdir(val_path):
     os.unlink('%s/%s' % (val_path, link))
-    script = 'ln -s ../../imagenet/val/%s %s/' % (link, val_path)
+    script = 'ln -s %s/val/%s %s/' % (inDir_full, link, val_path)
     os.system(script)
