@@ -13,11 +13,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from collections import OrderedDict
 import glob
 from PIL import Image
-import json, yaml
-import pandas as pd
-from scipy.spatial import cKDTree
-from scipy.special import gamma, digamma
-import lmdb
 import pickle
 
 def _weights_init(m):
@@ -764,6 +759,7 @@ class Dataset_lmdb_batch(Dataset):
     '''Dataset to load a lmdb data file.
     '''
     def __init__(self, lmdb_path, transform):
+        import lmdb
         env = lmdb.open(lmdb_path, readonly=True)
         with env.begin() as txn:
             self.data = [value for key, value in txn.cursor()]
@@ -777,6 +773,7 @@ class Dataset_lmdb_batch(Dataset):
         return len(self.data)
 
 def merge_args(args, params_json):
+    import json, yaml
     '''<args> is from argparser. <params_json> is a json/yaml file.
     merge them, if there is collision, the param in <params_json> has a higher priority.
     '''
@@ -793,6 +790,7 @@ def merge_args(args, params_json):
 
 class AccuracyManager():
     def __init__(self):
+        import pandas as pd
         self.accuracy = pd.DataFrame()
     
     def update(self, time, acc1, acc5=None):
