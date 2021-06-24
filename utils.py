@@ -1140,4 +1140,4 @@ class LossLine():
             item = f"{k} {v:{self.formats[k]}}"
             out.append(item)
         return sep.join(out)
-
+        
