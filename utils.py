@@ -1124,3 +1124,20 @@ def accuracy(output, target, topk=(1,)):
             correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
+
+class LossLine():
+    '''Format loss items for easy print.
+    '''
+    def __init__(self):
+        self.log_dict = OrderedDict()
+        self.formats = OrderedDict()
+    def update(self, key, value, format):
+        self.log_dict[key] = value
+        self.formats[key] = format
+    def format(self, sep=' '):
+        out = []
+        for k, v in self.log_dict.items():
+            item = f"{k} {v:{self.formats[k]}}"
+            out.append(item)
+        return sep.join(out)
+
