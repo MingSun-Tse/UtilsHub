@@ -5,7 +5,6 @@ from torch.utils.data import Dataset
 import torch.nn.functional as F
 import torchvision
 from torch.autograd import Variable
-from torch.autograd.gradcheck import zero_gradients
 from pprint import pprint
 import time, math, os, sys, copy, numpy as np, shutil as sh
 import matplotlib.pyplot as plt
@@ -946,8 +945,8 @@ def compute_jacobian(inputs, output):
 	:param output: Batch X Classes
 	:return: jacobian: Batch X Classes X Size
 	"""
+	from torch.autograd.gradcheck import zero_gradients
 	assert inputs.requires_grad
-
 	num_classes = output.size()[1]
 
 	jacobian = torch.zeros(num_classes, *inputs.size())
