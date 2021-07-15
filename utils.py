@@ -287,11 +287,15 @@ class PresetLRScheduler(object):
     """Using a manually designed learning rate schedule rules.
     """
     def __init__(self, decay_schedule):
+        if not isinstance(decay_schedule, dict):
+            assert isinstance(decay_schedule, str)
+            decay_schedule = strdict_to_dict(decay_schedule)
+
         # decay_schedule is a dictionary
         # which is for specifying iteration -> lr
         self.decay_schedule = {}
         for k, v in decay_schedule.items(): # a dict, example: {"0":0.001, "30":0.00001, "45":0.000001}
-            self.decay_schedule[int(k)] = v
+            self.decay_schedule[int(float(k))] = v # to float first in case of '1e3'
         # print('Using a preset learning rate schedule:')
         # print(self.decay_schedule)
 
