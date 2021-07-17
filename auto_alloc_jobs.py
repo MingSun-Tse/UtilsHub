@@ -73,13 +73,14 @@ class JobManager():
             if line.startswith('python') or line.startswith('sh'):
                 new_line = replace_var(line, var_dict)
                 if not is_exclude(new_line):
-                    print(f'[{strftime()}] Got a job: "%s"' % new_line)
                     jobs.append(new_line)
+                    print(f'[{strftime()}] {len(jobs)} Got a job: "{new_line}"')
+                    
         
         jobs = jobs * args.times # repeat
         print(f'[{strftime()}] Jobs will be repeated by {args.times} times.')
 
-        self.jobs_txt = '.auto_run_jobs_%s.txt' % time.time()
+        self.jobs_txt = '.auto_run_jobs_%s.txt' % time.strftime("%Y%m%d_%H%M%S")
         with open(self.jobs_txt, 'w') as f:
             for ix, j in enumerate(jobs):
                 f.write('%s ==> %s\n\n' % (ix, j))
@@ -89,54 +90,65 @@ class JobManager():
         jobs = []
         for line in open(self.jobs_txt):
             line = line.strip()
-            if line and (not line.startswith('[Done]')):
+            if line and (not line.startswith('[Done')):
                 jobs.append(line)
         return jobs
     
-    def update_jobs_txt(self, job):
+    def update_jobs_txt(self, job, gpu):
         new_txt = ''
         for line in open(self.jobs_txt):
             line = line.strip()
             if line == job:
-                line = '[Done] ' + line
+                line = f'[Done, GPU #{gpu}] ' + line
             new_txt += line + '\n'
         with open(self.jobs_txt, 'w') as f:
             f.write(new_txt)
 
-    def get_vacant_GPU_once(self):
-        vacant_gpus = []
+    def get_free_GPU_once(self):
+        free_gpus, busy_gpus = [], []
         get_gpu_successully = False
         while not get_gpu_successully:
-            f = 'wh_GPU_status_%s.tmp' % time.time()
+            f = '.wh_GPU_status_%s.txt' % time.time()
             os.system('nvidia-smi >> %s' % f)
             lines = open(f).readlines()
             os.remove(f)
             get_gpu_successully = True
             for i in range(len(lines)) :
-                line = lines[i]
+                line = lines[i].strip()
+                
+                # get vacant gpus by utility 
                 if 'MiB /' in line: # example: | 41%   31C    P8     4W / 260W |      1MiB / 11019MiB |      76%      Default |
                     volatile = line.split('%')[-2].split()[-1]
                     if volatile.isdigit():
                         volatile = float(volatile) / 100.
                         if volatile < 0.05: # now this is the only condition to determine if a GPU is used or not. May be improved.
                             gpu_id = lines[i - 1].split()[1] # example: |   1  GeForce RTX 208...  Off  | 00000000:02:00.0 Off |                  N/A |
-                            vacant_gpus.append(gpu_id)
+                            free_gpus.append(gpu_id)
+                            # print(f'found free gpu {gpu_id}')
                     else: # the log may be broken, access it again
                         print(line)
                         get_gpu_successully = False
                         print('Trying to get vacant GPUs: nvidia-smi log may be broken, access it agian')
                         break
-        return vacant_gpus
+                
+                # get busy gpus
+                if line.endswith('MiB |'): # example: |    0     18134      C   python                                      2939MiB |
+                    gpu_id = line.split()[1]
+                    program = line.split()[4]
+                    if program in ['python', 'matlab']:
+                        busy_gpus.append(gpu_id)
+                        # print(f'got busy gpu {gpu_id}')
+        return [x for x in free_gpus if x not in busy_gpus]
     
-    def get_vacant_GPU(self):
+    def get_free_GPU(self):
         '''run 3 times to get a stable result
         '''
         unavailable_gpus = args.unavailable_gpus.split(',')
-        vacant_gpus_1 = self.get_vacant_GPU_once()
-        vacant_gpus_2 = self.get_vacant_GPU_once()
-        vacant_gpus_3 = self.get_vacant_GPU_once()
-        vacant_gpus = [x for x in vacant_gpus_1 if x in vacant_gpus_2 and x in vacant_gpus_3 and (x not in unavailable_gpus)]
-        return vacant_gpus
+        free_gpus_1 = self.get_free_GPU_once()
+        free_gpus_2 = self.get_free_GPU_once()
+        free_gpus_3 = self.get_free_GPU_once()
+        free_gpus = [x for x in free_gpus_1 if x in free_gpus_2 and x in free_gpus_3 and (x not in unavailable_gpus)]
+        return free_gpus
     
     def run(self):
         while 1:
@@ -150,17 +162,17 @@ class JobManager():
             # find a gpu to run the job
             job = jobs[0]
             while 1:
-                vacant_gpus = self.get_vacant_GPU()
+                free_gpus = self.get_free_GPU()
                 current_time = strftime()
-                if len(vacant_gpus) > 0:
-                    gpu = vacant_gpus[0]
+                if len(free_gpus) > 0:
+                    gpu = free_gpus[0]
                     core_script = job.split('==>')[1].strip()
                     if args.debug:
                         new_script = 'CUDA_VISIBLE_DEVICES=%s %s --debug' % (gpu, core_script)
                     else:
                         new_script = 'CUDA_VISIBLE_DEVICES=%s nohup %s > /dev/null 2>&1 &' % (gpu, core_script)
                     os.system(new_script)
-                    print('[%s] ==> Found vacant GPUs: %s' % (current_time, ' '.join(vacant_gpus)))
+                    print('[%s] ==> Found vacant GPUs: %s' % (current_time, ' '.join(free_gpus)))
                     print('[%s] ==> Run the job on GPU %s: [%s] %d jobs left' % (current_time, gpu, new_script, n_job - 1))
                     time.sleep(10) # wait for 10 seconds so that the GPU is fully activated
                     break
@@ -169,7 +181,7 @@ class JobManager():
                     time.sleep(60)
                 
             # after the job is run successfully, update jobs txt
-            self.update_jobs_txt(job)
+            self.update_jobs_txt(job, gpu)
 
 '''Usage: python auto_alloc_jobs.py script.sh
 '''
