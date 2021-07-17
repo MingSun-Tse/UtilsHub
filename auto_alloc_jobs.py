@@ -1,6 +1,8 @@
 import os, sys, time, copy
 import argparse
 from utils import Timer
+import functools
+print = functools.partial(print, flush=True)
 
 def replace_var(line, var_dict):
     '''This function is to replace the variables in shell script.
@@ -116,28 +118,30 @@ class JobManager():
             for i in range(len(lines)) :
                 line = lines[i].strip()
                 
-                # get vacant gpus by utility 
+                # get free gpus by utility 
                 if 'MiB /' in line: # example: | 41%   31C    P8     4W / 260W |      1MiB / 11019MiB |      76%      Default |
                     volatile = line.split('%')[-2].split()[-1]
-                    if volatile.isdigit():
+                    memory = line.split('/')[1].split('|')[1].split('MiB')[0].strip()
+                    if volatile.isdigit() and memory.isdigit():
                         volatile = float(volatile) / 100.
-                        if volatile < 0.05: # now this is the only condition to determine if a GPU is used or not. May be improved.
+                        memory = float(memory)
+                        if volatile < 0.05 and memory < 100: # this condition is empirical. May be improved.
                             gpu_id = lines[i - 1].split()[1] # example: |   1  GeForce RTX 208...  Off  | 00000000:02:00.0 Off |                  N/A |
                             free_gpus.append(gpu_id)
-                            # print(f'found free gpu {gpu_id}')
+                            print(f'found free gpu {gpu_id}')
                     else: # the log may be broken, access it again
                         print(line)
                         get_gpu_successully = False
-                        print('Trying to get vacant GPUs: nvidia-smi log may be broken, access it agian')
+                        print('Trying to get free GPUs: nvidia-smi log may be broken, access it agian')
                         break
                 
                 # get busy gpus
                 if line.endswith('MiB |'): # example: |    0     18134      C   python                                      2939MiB |
                     gpu_id = line.split()[1]
                     program = line.split()[4]
-                    if program in ['python', 'matlab']:
+                    if program in ['python', 'python2', 'python3', 'matlab']:
                         busy_gpus.append(gpu_id)
-                        # print(f'got busy gpu {gpu_id}')
+                        print(f'got busy gpu {gpu_id}')
         return [x for x in free_gpus if x not in busy_gpus]
     
     def get_free_GPU(self):
@@ -172,12 +176,12 @@ class JobManager():
                     else:
                         new_script = 'CUDA_VISIBLE_DEVICES=%s nohup %s > /dev/null 2>&1 &' % (gpu, core_script)
                     os.system(new_script)
-                    print('[%s] ==> Found vacant GPUs: %s' % (current_time, ' '.join(free_gpus)))
+                    print('[%s] ==> Found free GPUs: %s' % (current_time, ' '.join(free_gpus)))
                     print('[%s] ==> Run the job on GPU %s: [%s] %d jobs left' % (current_time, gpu, new_script, n_job - 1))
-                    time.sleep(10) # wait for 10 seconds so that the GPU is fully activated
+                    time.sleep(20) # wait for 20 seconds so that the GPU is fully activated. This is decided by experience, may be improved.
                     break
                 else:
-                    print('[%s] ==> Found no vacant GPUs. Wait for another 60 seconds. %d jobs left.' % (current_time, n_job))
+                    print('[%s] ==> No free GPUs right now. Wait for another 60 seconds. %d jobs left.' % (current_time, n_job))
                     time.sleep(60)
                 
             # after the job is run successfully, update jobs txt
