@@ -219,6 +219,7 @@ class Logger(object):
         # initial print: save args
         self.print_script()
         self.print_nvidia_smi()
+        self.print_git_status()
         self.print_note()
         if (not args.debug) and self.SERVER != '':
             # If self.SERVER != '', it shows this is Huan's computer, then call this func, which is just a small feature to my need.
@@ -295,6 +296,14 @@ class Logger(object):
         out = pjoin(self.log_path, 'gpu_info.txt')
         script = 'nvidia-smi >> %s' % out
         os.system(script)
+    
+    def print_git_status(self):
+        out = pjoin(self.log_path, 'git_status.txt')
+        script = 'git status >> %s' % out
+        try:
+            os.system(script)
+        except:
+            pass
 
     def print_note(self):
         project = self.get_project_name() # the current project folder name
