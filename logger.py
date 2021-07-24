@@ -331,20 +331,32 @@ class Logger(object):
         '''
             Save the modle architecture, loss, configs, in case of future check.
         '''
+        t0 = time.time()
+        if not os.path.exists(self.cache_path):
+            os.makedirs(self.cache_path)
+        self.log_printer(f"==> Caching various config files to '{self.cache_path}'")
+        
         extensions = ['.py', '.json', '.yaml', '.sh', '.txt', '.md'] # files of these types will be cached
-        self.log_printer("==> Caching various config files to '%s'" % self.cache_path)
-        for root, dirs, files in os.walk("."):
-            if "Experiments" in root or "Debug_Dir" in root:
-                continue
-            for f in files:
-                _, ext = os.path.splitext(f)
-                if ext in extensions:
-                    dir_path = pjoin(self.cache_path, root)
-                    f_path = pjoin(root, f)
-                    if not os.path.exists(dir_path):
-                        os.makedirs(dir_path)
-                    if os.path.exists(f_path):
-                        sh.copy(f_path, dir_path)
+        def copy_folder(folder_path):
+            for root, dirs, files in os.walk(folder_path):
+                if '__pycache__' in root: continue
+                for f in files:
+                    _, ext = os.path.splitext(f)
+                    if ext in extensions:
+                        dir_path = pjoin(self.cache_path, root)
+                        f_path = pjoin(root, f)
+                        if not os.path.exists(dir_path):
+                            os.makedirs(dir_path)
+                        if os.path.exists(f_path):
+                            sh.copy(f_path, dir_path)
+        
+        # copy files in current dir
+        [sh.copy(f, self.cache_path) for f in os.listdir('.') if os.path.isfile(f) and os.path.splitext(f)[1] in extensions]
+
+        # copy dirs in current dir
+        avoid_dirs = ['__pycache__', 'Experiments', 'Debug_Dir', '.git']
+        [copy_folder(d) for d in os.listdir('.') if os.path.isdir(d) and d not in avoid_dirs]
+        self.log_printer(f'==> Caching done (time: {time.time() - t0:.2f}s)')
 
     def get_project_name(self):
         '''For example, 'Projects/CRD/logger.py', then return CRD
