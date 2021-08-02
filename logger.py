@@ -331,6 +331,8 @@ class Logger(object):
         '''
             Save the modle architecture, loss, configs, in case of future check.
         '''
+        if self.args.debug: return
+        
         t0 = time.time()
         if not os.path.exists(self.cache_path):
             os.makedirs(self.cache_path)
@@ -354,8 +356,10 @@ class Logger(object):
         [sh.copy(f, self.cache_path) for f in os.listdir('.') if os.path.isfile(f) and os.path.splitext(f)[1] in extensions]
 
         # copy dirs in current dir
-        avoid_dirs = ['__pycache__', 'Experiments', 'Debug_Dir', '.git']
-        [copy_folder(d) for d in os.listdir('.') if os.path.isdir(d) and d not in avoid_dirs]
+        ignore = ['__pycache__', 'Experiments', 'Debug_Dir', '.git']
+        if hasattr(self.args, 'cache_ignore'):
+            ignore += self.args.cache_ignore.split(',')
+        [copy_folder(d) for d in os.listdir('.') if os.path.isdir(d) and d not in ignore]
         self.log_printer(f'==> Caching done (time: {time.time() - t0:.2f}s)')
 
     def get_project_name(self):
