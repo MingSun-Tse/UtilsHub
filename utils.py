@@ -367,10 +367,13 @@ def strdict_to_dict(sstr, ttype):
     sstr = sstr.strip()
     if sstr.startswith('{') and sstr.endswith('}'):
         sstr = sstr[1:-1]
-    for x in sstr.split(','):
+    sep = ';' if ';' in sstr else ','
+    for x in sstr.split(sep):
         x = x.strip()
         if x:
-            k = x.split(':')[0]
+            k = x.split(':')[0] # note: key is always str 
+            if k.startswith("'"): k = k.strip("'") # remove ' '
+            if k.startswith('"'): k = k.strip('"') # remove " "
             v = ttype(x.split(':')[1].strip())
             out[k] = v
     return out
