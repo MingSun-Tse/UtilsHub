@@ -206,7 +206,7 @@ class Logger(object):
         self.args = args
 
         # set up work folder
-        self.ExpID = self.get_ExpID()
+        self.ExpID = args.ExpID if hasattr(args, 'ExpID') and args.ExpID else self.get_ExpID()
         self.Exps_Dir = 'Experiments'
         if hasattr(self.args, 'Exps_Dir'):
             self.Exps_Dir = self.args.Exps_Dir
