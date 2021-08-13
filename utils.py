@@ -242,6 +242,7 @@ def get_n_flops_(model=None, img_size=(224,224), n_channel=3, count_adds=True, i
         height, width = img_size, img_size
 
     # model = copy.deepcopy(model)
+    hooks = []
     list_conv = []
     def conv_hook(self, input, output):
         flops = np.prod(self.weight.data.shape) * output.size(2) * output.size(3) / self.groups
@@ -256,9 +257,11 @@ def get_n_flops_(model=None, img_size=(224,224), n_channel=3, count_adds=True, i
         childrens = list(net.children())
         if not childrens:
             if isinstance(net, torch.nn.Conv2d):
-                net.register_forward_hook(conv_hook)
+                h = net.register_forward_hook(conv_hook)
+                hooks += [h]
             if isinstance(net, torch.nn.Linear):
-                net.register_forward_hook(linear_hook)
+                h = net.register_forward_hook(linear_hook)
+                hooks += [h]
             return
         for c in childrens:
             register_hooks(c)
@@ -271,10 +274,17 @@ def get_n_flops_(model=None, img_size=(224,224), n_channel=3, count_adds=True, i
             input = input.cuda()
     
     # forward
-    model(input, **kwargs)
+    is_train = model.training 
+    model.eval()
+    with torch.no_grad():
+        model(input, **kwargs)
     total_flops = (sum(list_conv) + sum(list_linear))
     if count_adds:
         total_flops *= 2
+    
+    # reset to original model
+    for h in hooks: h.clear() # clear hooks
+    if is_train: model.train()
     return total_flops
 
 # refer to: https://github.com/alecwangcq/EigenDamage-Pytorch/blob/master/utils/common_utils.py
