@@ -242,7 +242,6 @@ def get_n_flops_(model=None, img_size=(224,224), n_channel=3, count_adds=True, i
         height, width = img_size, img_size
 
     # model = copy.deepcopy(model)
-    hooks = []
     list_conv = []
     def conv_hook(self, input, output):
         flops = np.prod(self.weight.data.shape) * output.size(2) * output.size(3) / self.groups
@@ -253,7 +252,7 @@ def get_n_flops_(model=None, img_size=(224,224), n_channel=3, count_adds=True, i
         flops = np.prod(self.weight.data.shape)
         list_linear.append(flops)
 
-    def register_hooks(net):
+    def register_hooks(net, hooks):
         childrens = list(net.children())
         if not childrens:
             if isinstance(net, torch.nn.Conv2d):
@@ -263,10 +262,12 @@ def get_n_flops_(model=None, img_size=(224,224), n_channel=3, count_adds=True, i
                 h = net.register_forward_hook(linear_hook)
                 hooks += [h]
             return
+        
         for c in childrens:
-            register_hooks(c)
-
-    register_hooks(model)
+            register_hooks(c, hooks)
+    
+    hooks = []
+    register_hooks(model, hooks)
     if input is None:
         input = torch.rand(1, n_channel, height, width)
         use_cuda = next(model.parameters()).is_cuda
@@ -283,7 +284,7 @@ def get_n_flops_(model=None, img_size=(224,224), n_channel=3, count_adds=True, i
         total_flops *= 2
     
     # reset to original model
-    for h in hooks: h.clear() # clear hooks
+    for h in hooks: h.remove() # clear hooks
     if is_train: model.train()
     return total_flops
 
