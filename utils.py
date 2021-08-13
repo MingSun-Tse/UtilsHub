@@ -241,7 +241,7 @@ def get_n_flops_(model=None, img_size=(224,224), n_channel=3, count_adds=True, i
         assert isinstance(img_size, int)
         height, width = img_size, img_size
 
-    model = copy.deepcopy(model)
+    # model = copy.deepcopy(model)
     list_conv = []
     def conv_hook(self, input, output):
         flops = np.prod(self.weight.data.shape) * output.size(2) * output.size(3) / self.groups
@@ -271,7 +271,7 @@ def get_n_flops_(model=None, img_size=(224,224), n_channel=3, count_adds=True, i
             input = input.cuda()
     
     # forward
-    model(input, kwargs)
+    model(input, **kwargs)
     total_flops = (sum(list_conv) + sum(list_linear))
     if count_adds:
         total_flops *= 2
