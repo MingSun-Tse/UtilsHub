@@ -328,13 +328,13 @@ def main():
     all_exps_ = glob.glob('Experiments/*%s*' % args.kw)
     
     # 2nd filtering: remove all exps in args.ignore
-    all_exps_2 = []
     if args.ignore:
+        all_exps_2 = []
         ignores = args.ignore.split(',')
         for exp in all_exps_:
             if not any([x in exp for x in ignores]):
                 all_exps_2 += [exp]
-    all_exps_ = all_exps_2
+        all_exps_ = all_exps_2
 
     # 3rd filtering: add all the exps with the same name, even it is not included by the 1st filtering by kw
     if args.exact_kw:
