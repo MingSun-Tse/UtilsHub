@@ -69,20 +69,21 @@ def is_acc_line(line):
     line = line.lower()
     return "acc" in line and "best" in line and '@' in line
 
-def parse_acc(line):
+def parse_acc(line, acc5=False):
+    acc_mark = 'Acc5' if acc5 else 'Acc1'
     # last accuracy
-    if 'Acc1 =' in line: # previous impel
-        acc_l = _get_value(line, 'Acc1 =', exact_key=True)
+    if f'{acc_mark} =' in line: # previous impel
+        acc_l = _get_value(line, f'{acc_mark} =', exact_key=True)
     elif 'test acc = ' in line: # previous impel
         acc_l = _get_value(line, 'test acc =', exact_key=True)
     else:
-        acc_l = _get_value(line, 'Acc1')
+        acc_l = _get_value(line, f'{acc_mark}', exact_key=True)
 
     # best accuray
-    if 'Best Acc1' in line: # previous impel
-        acc_b = _get_value(line, 'Best Acc1', exact_key=True)
-    elif 'Best_Acc1' in line:
-        acc_b = _get_value(line, 'Best_Acc1', exact_key=True)
+    if f'Best {acc_mark}' in line: # previous impel
+        acc_b = _get_value(line, f'Best {acc_mark}', exact_key=True)
+    elif f'Best_{acc_mark}' in line:
+        acc_b = _get_value(line, f'Best_{acc_mark}', exact_key=True)
     elif 'Best =' in line:
         acc_b = _get_value(line, 'Best =', exact_key=True)
     elif 'best = ' in line:
@@ -145,7 +146,7 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
                 lines = open(log_f, 'r').readlines()
                 for k in range(1, len(lines) + 1):
                     if is_acc_line(lines[-k]):
-                        acc_l, acc_b = parse_acc(lines[-k])
+                        acc_l, acc_b = parse_acc(lines[-k], args.acc5)
                         acc_time_ = parse_time(lines[-k])
                         break
             
@@ -153,7 +154,7 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
                 for line in open(log_f, 'r'):
                     if is_acc_line(line) and mark in line:
                         acc_time_ = parse_time(line)
-                        acc_l, acc_b = parse_acc(line)
+                        acc_l, acc_b = parse_acc(line, args.acc5)
                         break
 
             if acc_b == -1:
@@ -315,6 +316,8 @@ parser.add_argument('--remove_outlier_acc', action='store_true')
 parser.add_argument('--outlier_thresh', type=float, default=0.5)
 parser.add_argument('--corr_stats', type=str, default='spearman', choices=['pearson', 'spearman', 'kendall'])
 parser.add_argument('--out_plot_path', type=str, default='plot.jpg')
+parser.add_argument('--ignore', type=str, default='')
+parser.add_argument('--acc5', action='store_true', help='print top5 accuracy, default: top1')
 args = parser.parse_args()
 def main():
     '''Usage:
@@ -323,8 +326,17 @@ def main():
     '''
     # 1st filtering: get all the exps with the keyword
     all_exps_ = glob.glob('Experiments/*%s*' % args.kw)
+    
+    # 2nd filtering: remove all exps in args.ignore
+    all_exps_2 = []
+    if args.ignore:
+        ignores = args.ignore.split(',')
+        for exp in all_exps_:
+            if not any([x in exp for x in ignores]):
+                all_exps_2 += [exp]
+    all_exps_ = all_exps_2
 
-    # 2nd filtering: add all the exps with the same name, even it is not included by the 1st filtering by kw
+    # 3rd filtering: add all the exps with the same name, even it is not included by the 1st filtering by kw
     if args.exact_kw:
         all_exps = all_exps_
     else:
