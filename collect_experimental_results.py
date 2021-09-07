@@ -67,7 +67,7 @@ def is_acc_line(line):
     format features which @mst used. So if these format features are changed, this func may not work.
     '''
     line = line.lower()
-    return "acc" in line and "best" in line and '@' in line
+    return "acc" in line and "best" in line and '@' in line and 'lr' in line and 'resume' not in line and 'finetune' not in line
 
 def parse_acc(line, acc5=False):
     acc_mark = 'Acc5' if acc5 else 'Acc1'
