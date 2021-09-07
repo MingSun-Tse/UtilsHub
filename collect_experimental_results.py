@@ -80,18 +80,21 @@ def parse_acc(line, acc5=False):
         acc_l = _get_value(line, f'{acc_mark}', exact_key=True)
 
     # best accuray
-    if f'Best {acc_mark}' in line: # previous impel
-        acc_b = _get_value(line, f'Best {acc_mark}', exact_key=True)
-    elif f'Best_{acc_mark}' in line:
-        acc_b = _get_value(line, f'Best_{acc_mark}', exact_key=True)
-    elif 'Best =' in line:
-        acc_b = _get_value(line, 'Best =', exact_key=True)
-    elif 'best = ' in line:
-        acc_b = _get_value(line, 'best =', exact_key=True)
-    elif 'Best' in line:
-        acc_b = _get_value(line, 'Best', exact_key=True)
+    if acc5 and 'Best_Acc5' not in line: # hardcoding, may be improved
+        acc_b = -1
     else:
-        raise NotImplementedError
+        if f'Best {acc_mark}' in line: # previous impel
+            acc_b = _get_value(line, f'Best {acc_mark}', exact_key=True)
+        elif f'Best_{acc_mark}' in line:
+            acc_b = _get_value(line, f'Best_{acc_mark}', exact_key=True)
+        elif 'Best =' in line:
+            acc_b = _get_value(line, 'Best =', exact_key=True)
+        elif 'best = ' in line:
+            acc_b = _get_value(line, 'best =', exact_key=True)
+        elif 'Best' in line:
+            acc_b = _get_value(line, 'Best', exact_key=True)
+        else:
+            raise NotImplementedError
     return acc_l, acc_b
 
 def parse_time(line): # TODO
@@ -157,7 +160,7 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
                         acc_l, acc_b = parse_acc(line, args.acc5)
                         break
 
-            if acc_b == -1:
+            if acc_l == -1 and acc_b == -1:
                 print('Not found mark "%s" in the log "%s", skip it' % (mark, log_f))
                 continue
         
