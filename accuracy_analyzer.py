@@ -2,6 +2,13 @@ from collections import OrderedDict
 import numpy as np
 import sys, glob
 
+def is_acc_line(line):
+    '''This function determines if a line is an accuracy line. Of course the accuracy line should meet some 
+    format features which @mst used. So if these format features are changed, this func may not work.
+    '''
+    line = line.lower()
+    return "acc" in line and "best" in line and '@' in line and 'lr' in line and 'resume' not in line and 'finetune' not in line
+    
 # parse wanted value from accuracy print log
 def parse_acc_log(line, key, type_func=float):
     line_seg = line.strip().lower().split()
@@ -51,7 +58,7 @@ class AccuracyAnalyzer():
             Warning: This func depends on the specific log format. Need improvement.
         '''
         for line in open(self.log):
-            if 'Acc1' in line and '@' in line:
+            if is_acc_line(line):
                 lr = parse_acc_log(line, 'lr')
                 step = parse_acc_log(line, 'epoch', type_func=int)
                 acc = parse_acc_log(line, 'acc1')
