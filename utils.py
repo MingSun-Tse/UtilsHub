@@ -1151,4 +1151,17 @@ class LossLine():
             item = f"{k} {v:{self.formats[k]}}"
             out.append(item)
         return sep.join(out)
-        
+
+def update_args(args):
+    '''Update arguments of configargparse'''
+    arg_dict = copy.deepcopy(args.__dict__)
+    for k, v in arg_dict.items():
+        if '.' in k: # @mst-TODO: hardcode pattern, may be risky
+            module, arg = k.split('.') # e.g., "deepmixup.depth"
+            if arg_dict[f'{module}.ON']:  # this module is being used
+                if not hasattr(args, module): args.__setattr__(module, {})
+                args.__dict__[module][arg] = v # e.g., args['deepmixup']['depth'] = 10
+            else: # this module is NOT used, remove all its dependency arguments except the .ON arg
+                if not k.endswith('.ON'): 
+                    args.__delattr__(k) 
+    return args
