@@ -1160,8 +1160,6 @@ def update_args(args):
             module, arg = k.split('.') # e.g., "deepmixup.depth"
             if arg_dict[f'{module}.ON']:  # this module is being used
                 if not hasattr(args, module): args.__setattr__(module, {})
-                args.__dict__[module][arg] = v # e.g., args['deepmixup']['depth'] = 10
-            else: # this module is NOT used, remove all its dependency arguments except the .ON arg
-                if not k.endswith('.ON'): 
-                    args.__delattr__(k) 
+                args.__dict__[module][arg] = v # args.deepmixup.depth = 10 --> args.deepmixup['depth'] = 10
+            args.__delattr__(k)
     return args
