@@ -389,8 +389,8 @@ class Logger(object):
         os.remove(local_f)
     
     def save_args(self, args):
-        with open(pjoin(self.log_path, 'params.json'), 'w') as f:
-            json.dump(args.__dict__, f, indent=4)
+        # with open(pjoin(self.log_path, 'params.json'), 'w') as f:
+        #     json.dump(args.__dict__, f, indent=4)
         with open(pjoin(self.log_path, 'params.yaml'), 'w') as f:
             yaml.dump(args.__dict__, f, indent=4)
     

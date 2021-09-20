@@ -1154,12 +1154,13 @@ class LossLine():
 
 def update_args(args):
     '''Update arguments of configargparse'''
+    class EmptyClass(): pass
     arg_dict = copy.deepcopy(args.__dict__)
     for k, v in arg_dict.items():
         if '.' in k: # @mst-TODO: hardcode pattern, may be risky
             module, arg = k.split('.') # e.g., "deepmixup.depth"
             if arg_dict[f'{module}.ON']:  # this module is being used
-                if not hasattr(args, module): args.__setattr__(module, {})
-                args.__dict__[module][arg] = v # args.deepmixup.depth = 10 --> args.deepmixup['depth'] = 10
+                if not hasattr(args, module): args.__setattr__(module, EmptyClass()) # set to a blank class
+                args.__dict__[module].__dict__[arg] = v # args.'deepmixup.depth' = 10 --> args.deepmixup.depth = 10
             args.__delattr__(k)
     return args
