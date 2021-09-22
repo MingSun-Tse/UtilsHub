@@ -276,6 +276,7 @@ class Logger(object):
         mkdirs(self.weights_path, self.gen_img_path, self.logplt_path, self.cache_path)
         self.logtxt = open(self.logtxt_path, "a+")
         self.script_hist = open('.script_history', 'a+') # save local script history, for convenience of check
+        sys.stderr = self.logtxt # redirect stderr to the log file
 
     def print_script(self):
         script = 'cd %s\n' % os.path.abspath(os.getcwd())
