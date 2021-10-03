@@ -21,6 +21,9 @@ class DoubleWriter():
     def write(self, msg):
         self.f1.write(msg)
         self.f2.write(msg)
+    def flush(self):
+        self.f1.flush()
+        self.f2.flush()
 
 class LogPrinter(object):
     def __init__(self, file, ExpID, print_to_screen=False):
