@@ -1,1 +1,1 @@
-ezlogging/logger.py
+../ezlogging/logger.py
