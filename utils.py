@@ -24,9 +24,10 @@ def _weights_init(m):
             m.weight.data.fill_(1.0)
             m.bias.data.zero_()
 
-def _weights_init_orthogonal(m, act='relu'):
+def _weights_init_orthogonal(m, act='relu', scale=1):
     if isinstance(m, (nn.Conv2d, nn.Linear)):
         init.orthogonal_(m.weight, gain=init.calculate_gain(act))
+        m.weight.data.copy_(m.weight.data * scale)
         if m.bias is not None:
             m.bias.data.fill_(0)
     elif isinstance(m, nn.BatchNorm2d):
@@ -1176,7 +1177,18 @@ def update_args(args):
 
 def check_kernel_spatial_dist(model):
     for name, module in model.named_modules():
-        if isinstance(module, (nn.Conv2d)):
+        if isinstance(module, (nn.Conv2d, nn.Linear)):
             spatial = module.weight.data.abs().mean(dim=(0,1))
             print(f'{name} kernel spatial dist:')
             print(spatial.data.cpu().numpy())
+
+def print_format(x, fmt='%.3f', sep=' '):
+    return sep.join([fmt % xi for xi in x])
+
+def check_grad_norm(model):
+    for name, module in model.named_modules():
+        if isinstance(module, (nn.Conv2d, nn.Linear)):
+            grad_abs = module.weight.grad.abs().view(module.weight.shape[0], -1)
+            grad_abs_mean = grad_abs.mean(dim=-1)
+            logstr = print_format(grad_abs_mean)
+            print(f'[{name:>20s}] layer grad norm: {logstr}')
