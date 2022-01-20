@@ -1211,4 +1211,4 @@ def check_weight_stats(model):
     for name, module in model.named_modules():
         if isinstance(module, (nn.Conv2d, nn.Linear)):
             w_mean, w_std = torch.mean(module.weight), torch.std(module.weight)
-            print(f'[{name:>20s}] weight mean: {w_mean:>6.4f} std: {w_std:>6.4f}')
+            print(f'[{name:>20s}] weight mean: {w_mean:>7.4f} std: {w_std:>7.4f}')
