@@ -1,8 +1,32 @@
 import os, sys, time, copy
 import argparse
-from utils import Timer
 import functools
 print = functools.partial(print, flush=True)
+
+class Timer():
+    '''Log down iteration time and predict the left time for the left iterations
+    '''
+    def __init__(self, total_epoch):
+        self.total_epoch = total_epoch
+        self.time_stamp = []
+
+    def predict_finish_time(self, ave_window=3):
+        self.time_stamp.append(time.time()) # update time stamp
+        if len(self.time_stamp) == 1:
+            return 'only one time stamp, not enough to predict'
+        interval = []
+        for i in range(len(self.time_stamp) - 1):
+            t = self.time_stamp[i + 1] - self.time_stamp[i]
+            interval.append(t)
+        sec_per_epoch = np.mean(interval[-ave_window:])
+        left_t = sec_per_epoch * (self.total_epoch - len(interval))
+        finish_t = left_t + time.time()
+        finish_t = time.strftime('%Y/%m/%d-%H:%M', time.localtime(finish_t))
+        total_t = '%.2fh' % ((np.sum(interval) + left_t) / 3600.)
+        return finish_t + ' (speed: %.2fs per timing, total_time: %s)' % (sec_per_epoch, total_t)
+
+    def __call__(self):
+        return(self.predict_finish_time())
 
 def replace_var(line, var_dict):
     '''This function is to replace the variables in shell script.
