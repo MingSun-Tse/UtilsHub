@@ -296,7 +296,7 @@ class PresetLRScheduler(object):
     def __init__(self, decay_schedule):
         if not isinstance(decay_schedule, dict):
             assert isinstance(decay_schedule, str)
-            decay_schedule = strdict_to_dict(decay_schedule)
+            decay_schedule = strdict_to_dict(decay_schedule, float)
 
         # decay_schedule is a dictionary
         # which is for specifying iteration -> lr
@@ -785,22 +785,6 @@ class Dataset_lmdb_batch(Dataset):
     def __len__(self):
         return len(self.data)
 
-def merge_args(args, params_json):
-    import json, yaml
-    '''<args> is from argparser. <params_json> is a json/yaml file.
-    merge them, if there is collision, the param in <params_json> has a higher priority.
-    '''
-    with open(params_json) as f:
-        if params_json.endswith('.json'):
-            params = json.load(f)
-        elif params_json.endswith('.yaml'):
-            params = yaml.load(f, Loader=yaml.FullLoader)
-        else:
-            raise NotImplementedError
-    for k, v in params.items():
-        args.__dict__[k] = v
-    return args
-
 class AccuracyManager():
     def __init__(self):
         import pandas as pd
@@ -1212,3 +1196,17 @@ def check_weight_stats(model):
         if isinstance(module, (nn.Conv2d, nn.Linear)):
             w_mean, w_std = torch.mean(module.weight), torch.std(module.weight)
             print(f'[{name:>20s}] weight mean: {w_mean:>7.4f} std: {w_std:>7.4f}')
+
+def update_args_from_file(args, config_path):
+    import json, yaml
+    with open(config_path) as f:
+        if config_path.endswith('.json'):
+            params = json.load(f)
+        elif config_path.endswith('.yaml'):
+            params = yaml.load(f, Loader=yaml.FullLoader)
+        else:
+            raise NotImplementedError
+    for k, v in params.items():
+        assert k in args.__dict__, f"'{k}'' is not in original args. Please check!"
+        args.__dict__[k] = v
+    return args
