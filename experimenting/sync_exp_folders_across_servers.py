@@ -6,41 +6,43 @@ Example: python ../UtilsHub/experimenting/sync_exp_folders_across_servers.py -s 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--src', '-s', type=str, required=True)
-parser.add_argument('--target', '-t', type=str, default='Experiments')
+parser.add_argument('--target_exp', '-t', type=str, default='Experiments')
 parser.add_argument('--pw', type=str)
 parser.add_argument('--only_scp_weights', action='store_true')
 args = parser.parse_args()
 
-host, folder = args.src.split(':')
-print(f'Remote SERVER: {host} | target folder: {folder}')
+host, src_dir = args.src.split(':')
+print(f'Remote SERVER: {host} | src directory: {src_dir}')
 
 prefix = f'sshpass -p {args.pw} ' if args.pw else ''
+exp_folder_name = os.path.split(args.target_exp)[-1] # to handle two typical cases: 'Experiments' and '../experiments'
 
 if args.only_scp_weights:
     # Get folders of interest
-    logfile = 'scp_folders.tmp'
-    script1 = prefix + f'ssh {host} ls {folder} > {logfile}'
+    logfile = 'scp_dir.tmp'
+    script1 = prefix + f'ssh {host} ls {src_dir} > {logfile}'
     os.system(script1)
 
     # Parse
-    fodlers_of_interest = []
+    remote_folders, local_folders = [], []
     for line in open(logfile, 'r'):
         line = line.strip()
         if line.endswith(':'): 
             line = line[:-1]
         if '_SERVER' in line: # This is the only condition here to check whether a line is a experiment folder or not
             # TODO [@mst,20220310]: To improve this
-            fodlers_of_interest.append(line)
+            remote_folders += [line]
+            local_folders += [line.split(f'/{exp_folder_name}/')[1]]
     os.remove(logfile)
 
     # Scp
-    for d in fodlers_of_interest:
-        os.makedirs(f'{d}/weights', exist_ok=True)
-        script = prefix + f'scp -r {host}:{d}/weights/* {d}/weights'
+    for dr, dl in zip(remote_folders, local_folders):
+        os.makedirs(f'{dl}/weights', exist_ok=True)
+        script = prefix + f'scp -r {host}:{dr}/weights/* {dl}/weights'
         os.system(script)
-        print(f'==> Only scp weights: "{d}/weights"')
+        print(f'==> Only scp weights: "{dl}/weights"')
 else:
-    script = prefix + f'scp -r {args.src} {args.target}'
+    script = prefix + f'scp -r {args.src} {args.target_exp}'
     os.system(script)
 
 print(f'==> Scp done!')
