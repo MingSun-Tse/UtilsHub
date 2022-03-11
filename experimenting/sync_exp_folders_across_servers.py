@@ -37,10 +37,11 @@ if args.only_scp_weights:
 
     # Scp
     for dr, dl in zip(remote_folders, local_folders):
-        os.makedirs(f'{dl}/weights', exist_ok=True)
-        script = prefix + f'scp -r {host}:{dr}/weights/* {dl}/weights'
+        weights_dir = f'{args.target_exp}/{dl}/weights'
+        os.makedirs(weights_dir, exist_ok=True)
+        script = prefix + f'scp -r {host}:{dr}/weights/* {weights_dir}'
         os.system(script)
-        print(f'==> Only scp weights: "{dl}/weights"')
+        print(f'==> Only scp weights: "{weights_dir}"')
 else:
     script = prefix + f'scp -r {args.src} {args.target_exp}'
     os.system(script)
