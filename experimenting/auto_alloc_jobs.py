@@ -3,34 +3,9 @@ import argparse
 import functools
 print = functools.partial(print, flush=True)
 
-class Timer():
-    '''Log down iteration time and predict the left time for the left iterations
-    '''
-    def __init__(self, total_epoch):
-        self.total_epoch = total_epoch
-        self.time_stamp = []
-
-    def predict_finish_time(self, ave_window=3):
-        self.time_stamp.append(time.time()) # update time stamp
-        if len(self.time_stamp) == 1:
-            return 'only one time stamp, not enough to predict'
-        interval = []
-        for i in range(len(self.time_stamp) - 1):
-            t = self.time_stamp[i + 1] - self.time_stamp[i]
-            interval.append(t)
-        sec_per_epoch = np.mean(interval[-ave_window:])
-        left_t = sec_per_epoch * (self.total_epoch - len(interval))
-        finish_t = left_t + time.time()
-        finish_t = time.strftime('%Y/%m/%d-%H:%M', time.localtime(finish_t))
-        total_t = '%.2fh' % ((np.sum(interval) + left_t) / 3600.)
-        return finish_t + ' (speed: %.2fs per timing, total_time: %s)' % (sec_per_epoch, total_t)
-
-    def __call__(self):
-        return(self.predict_finish_time())
-
 def replace_var(line, var_dict):
-    '''This function is to replace the variables in shell script.
-    '''
+    """This function is to replace the variables in shell script.
+    """
     line = line.strip()
     line_copy = copy.deepcopy(line)
     max_len = len(line)
@@ -58,8 +33,8 @@ def replace_var(line, var_dict):
     return line_copy
 
 def remove_comments(f):
-    '''remove # comments in script files
-    '''
+    """remove # comments in script files
+    """
     lines = []
     for line in open(f, 'r'):
         if '#' in line:
@@ -68,12 +43,12 @@ def remove_comments(f):
         lines.append(line)
     return lines
 
-def is_exclude(line):
-    exclude = False
-    for x in args.exclude:
+def is_ignore(line):
+    ignore = False
+    for x in args.ignore:
         if len(x) and x in line:
-            exclude = True
-    return exclude
+            ignore = True
+    return ignore
 
 def strftime():
     return time.strftime("%Y/%m/%d-%H:%M:%S")
@@ -98,7 +73,7 @@ class JobManager():
             # collect jobs
             if line.startswith('python') or line.startswith('sh'):
                 new_line = replace_var(line, var_dict)
-                if not is_exclude(new_line):
+                if not is_ignore(new_line):
                     jobs.append(new_line)
                     print(f'[{strftime()}] {len(jobs)} Got a job: "{new_line}"')
                     
@@ -111,6 +86,14 @@ class JobManager():
             for ix, j in enumerate(jobs):
                 f.write('%s ==> %s\n\n' % (ix, j))
         print(f'[{strftime()}] Save jobs to {self.jobs_txt}')
+
+        # save a summarized script
+        summary = script_f.replace('.sh', '_summary.sh')
+        with open(summary, 'w') as f:
+            for j in jobs:
+                script = f'CUDA_VISIBLE_DEVICES=0 nohup {j} > /dev/null 2>&1 &\n\n'
+                f.write(script)
+        print(f'[{strftime()}] Save jobs to {summary}')
 
     def read_jobs(self):
         jobs = []
@@ -169,8 +152,8 @@ class JobManager():
         return [x for x in free_gpus if x not in busy_gpus]
     
     def get_free_GPU(self):
-        '''run 3 times to get a stable result
-        '''
+        """run 3 times to get a stable result
+        """
         unavailable_gpus = args.unavailable_gpus.split(',')
         free_gpus_1 = self.get_free_GPU_once()
         free_gpus_2 = self.get_free_GPU_once()
@@ -211,17 +194,17 @@ class JobManager():
             # after the job is run successfully, update jobs txt
             self.update_jobs_txt(job, gpu)
 
-'''Usage: python auto_alloc_jobs.py script.sh
-'''
+r"""Usage: python auto_alloc_jobs.py script.sh
+"""
 parser = argparse.ArgumentParser()
 parser.add_argument('--script', type=str, required=True)
 parser.add_argument('--times', type=int, default=1, help='each experiment will be run by <times> times')
-parser.add_argument('--exclude', type=str, default='', help='exclude scripts that are not expected to run. separated by comma. example: wrn,resnet56')
+parser.add_argument('--ignore', type=str, default='', help='ignore scripts that are not expected to run. separated by comma. example: wrn,resnet56')
 parser.add_argument('--unavailable_gpus', type=str, default=',', help='gpus that are unavailable')
 parser.add_argument('--debug', action='store_true')
 args = parser.parse_args()
 def main():
-    args.exclude = args.exclude.split(',')
+    args.ignore = args.ignore.split(',')
     job_manager = JobManager(args.script)
     job_manager.run()
 
