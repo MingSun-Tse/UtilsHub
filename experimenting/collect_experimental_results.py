@@ -7,6 +7,7 @@ from accuracy_analyzer import AccuracyAnalyzer
 import matplotlib.pyplot as plt
 pjoin = os.path.join
 
+
 def _get_value(line, key, type_func=float, exact_key=False):
     if exact_key: # back compatibility
         value = line.split(key)[1].strip().split()[0]
@@ -23,10 +24,11 @@ def _get_value(line, key, type_func=float, exact_key=False):
         value = type_func(line_seg[i + 1])
     return value
 
+
 def _get_exp_name_id(exp_path):
-    '''arg example: Experiments/kd-vgg13vgg8-cifar100-Temp40_SERVER5-20200727-220318
+    """arg example: Experiments/kd-vgg13vgg8-cifar100-Temp40_SERVER5-20200727-220318
             or kd-vgg13vgg8-cifar100-Temp40_SERVER5-20200727-220318
-    '''
+    """
     exp_path = exp_path.strip('/')
     assert 'SERVER' in exp_path # safety check
     exp_id = exp_path.split('-')[-1]
@@ -36,14 +38,16 @@ def _get_exp_name_id(exp_path):
     assert date.isdigit() # safety check
     return exp_name, exp_id, date
 
+
 def _get_project_name():
     cwd = os.getcwd()
     # assert '/Projects/' in cwd
     return cwd.split('/')[-1] 
 
+
 def _make_acc_str(acc_list, num_digit=2, present=False):
-    '''Example the output: 75.84, 75.63, 75.45 -- 75.64 (0.16)
-    '''
+    """Example the output: 75.84, 75.63, 75.45 -- 75.64 (0.16)
+    """
     str_format = '%.{}f'.format(num_digit)
     acc_str = [str_format % x for x in acc_list]
     mean = str_format % np.mean(acc_list) if len(acc_list) else 0
@@ -54,6 +58,7 @@ def _make_acc_str(acc_list, num_digit=2, present=False):
         output = ', '.join(acc_str) + ' -- %s (%s)' % (mean, std) # print the result of every experiment: 75.84, 75.63, 75.45 -- 75.64 (0.16)
     return output
 
+
 def _make_acc_str_one_exp(acc_last, acc_best, num_digit):
     str_format = '%.{}f'.format(num_digit)
     output = '%s/%s' % (str_format % acc_last, str_format % acc_best)
@@ -63,39 +68,33 @@ def _make_acc_str_one_exp(acc_last, acc_best, num_digit):
 # acc line example: Acc1 0.9195 @ Step 46600 (Best = 0.9208 @ Step 38200) lr 0.0001
 # acc line example: ==> test acc = 0.7156 @ step 80000 (best = 0.7240 @ step 21300)
 def is_acc_line(line):
-    '''This function determines if a line is an accuracy line. Of course the accuracy line should meet some 
+    """This function determines if a line is an accuracy line. Of course the accuracy line should meet some 
     format features which @mst used. So if these format features are changed, this func may not work.
-    '''
+    """
     line = line.lower()
     return "acc" in line and "best" in line and '@' in line and 'lr' in line and 'resume' not in line and 'finetune' not in line
 
-def parse_acc(line, acc5=False):
-    acc_mark = 'Acc5' if acc5 else 'Acc1'
-    # last accuracy
-    if f'{acc_mark} =' in line: # previous impel
-        acc_l = _get_value(line, f'{acc_mark} =', exact_key=True)
-    elif 'test acc = ' in line: # previous impel
+
+def parse_metric(line, metric='Acc1'):
+    r"""Parse out the metric value of interest.
+    """
+    # Get the last metric
+    if f'{metric} =' in line: # previous impl.
+        acc_l = _get_value(line, f'{metric} =', exact_key=True)
+    elif 'test acc = ' in line: # previous impl.
         acc_l = _get_value(line, 'test acc =', exact_key=True)
     else:
-        acc_l = _get_value(line, f'{acc_mark}', exact_key=True)
+        acc_l = _get_value(line, f'{metric}', exact_key=True)
 
-    # best accuray
-    if acc5 and 'Best_Acc5' not in line: # hardcoding, may be improved
-        acc_b = -1
+    # Get the best metric
+    if f'Best {metric}' in line: # previous impl.
+        acc_b = _get_value(line, f'Best {metric}', exact_key=True)
+    elif f'Best_{metric}' in line:
+        acc_b = _get_value(line, f'Best_{metric}', exact_key=True)
     else:
-        if f'Best {acc_mark}' in line: # previous impel
-            acc_b = _get_value(line, f'Best {acc_mark}', exact_key=True)
-        elif f'Best_{acc_mark}' in line:
-            acc_b = _get_value(line, f'Best_{acc_mark}', exact_key=True)
-        elif 'Best =' in line:
-            acc_b = _get_value(line, 'Best =', exact_key=True)
-        elif 'best = ' in line:
-            acc_b = _get_value(line, 'best =', exact_key=True)
-        elif 'Best' in line:
-            acc_b = _get_value(line, 'Best', exact_key=True)
-        else:
-            raise NotImplementedError
+        acc_b = -1 # Not found the best metric value (not written in log)
     return acc_l, acc_b
+
 
 def parse_time(line): # TODO
     if 'Epoch' in line:
@@ -109,12 +108,14 @@ def parse_time(line): # TODO
         raise NotImplementedError
     return time
 
+
 def parse_finish_time(log_f):
     lines = open(log_f, 'r').readlines()
     for k in range(1, min(1000, len(lines))):
         if 'predicted finish time' in lines[-k].lower():
             finish_time = lines[-k].split('time:')[1].split('(')[0].strip() # example: predicted finish time: 2020/10/25-08:21 (speed: 314.98s per timing)
             return finish_time
+
 
 def remove_outlier(metric, *lists):
     metric = copy.deepcopy(metric)
@@ -124,13 +125,14 @@ def remove_outlier(metric, *lists):
             for l in lists:
                 l.pop(ix)
 
+
 def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
-    '''In <all_exps>, pick those with <name> in their name for accuracy collection.
+    """In <all_exps>, pick those with <name> in their name for accuracy collection.
     <name> is to locate which experiments; <mark> is to locate the accuracy line in a log.
-    '''
+    """
     exp_id, date = [], []
     acc_last, acc_best, acc_time, finish_time = [], [], [], []
-    name = 'Experiments/%s_SERVER' % name
+    name = f'{args.exps_folder}/{name}_SERVER'
 
     # for loss, acc correlation analysis
     acc1_test_just_finished_prune = []
@@ -145,62 +147,68 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
         if name in exp:
             log_f = '%s/log/log.txt' % exp
             acc_l, acc_b = -1, -1 # acc last, acc best
-            if mark == 'last': # the last number shown in the log
-                lines = open(log_f, 'r').readlines()
-                for k in range(1, len(lines) + 1):
-                    if is_acc_line(lines[-k]):
-                        acc_l, acc_b = parse_acc(lines[-k], args.acc5)
-                        acc_time_ = parse_time(lines[-k])
-                        break
             
-            else: # mark is like "Epoch 240 (", which explicitly points out which epoch or step
-                for line in open(log_f, 'r'):
-                    if is_acc_line(line) and mark in line:
-                        acc_time_ = parse_time(line)
-                        acc_l, acc_b = parse_acc(line, args.acc5)
-                        break
+            try:
+                if mark == 'last': # the last number shown in the log
+                    lines = open(log_f, 'r').readlines()
+                    for k in range(1, len(lines) + 1):
+                        if is_acc_line(lines[-k]):
+                            acc_l, acc_b = parse_metric(lines[-k], args.metric)
+                            acc_time_ = parse_time(lines[-k])
+                            break
+                
+                else: # mark is like "Epoch 240 (", which explicitly points out which epoch or step
+                    for line in open(log_f, 'r'):
+                        if is_acc_line(line) and mark in line:
+                            acc_time_ = parse_time(line)
+                            acc_l, acc_b = parse_metric(line, args.metric)
+                            break
 
-            if acc_l == -1 and acc_b == -1:
-                print('Not found mark "%s" in the log "%s", skip it' % (mark, log_f))
-                continue
-        
-            # parse, for loss, acc correlation analysis
-            for line in open(log_f, 'r'):
-                if 'Just got pruned model' in line and 'Loss_train' in line:
-                    acc1_test = _get_value(line, 'Acc1', exact_key=True)
-                    loss_test = _get_value(line, 'Loss_test', exact_key=True)
-                    acc1_train = _get_value(line, 'Acc1_train', exact_key=True)
-                    loss_train = _get_value(line, 'Loss_train', exact_key=True)
-                    acc1_test_just_finished_prune.append(acc1_test)
-                    loss_test_just_finished_prune.append(loss_test)
-                    acc1_train_just_finished_prune.append(acc1_train)
-                    loss_train_just_finished_prune.append(loss_train)
-                    break
+                if acc_l == -1 and acc_b == -1:
+                    print('Not found mark "%s" in the log "%s", skip it' % (mark, log_f))
+                    continue
             
-            # get statistics for best model
-            if args.corr_analysis:
-                for line in open(log_f, 'r'):
-                    if is_acc_line(line):
-                        best_epoch = _get_value(line, 'Best_Acc1_Epoch', exact_key=True, type_func=int)
-                        current_epoch = _get_value(line, 'Epoch', exact_key=True, type_func=int)
-                        if current_epoch == best_epoch:
-                            loss_train = _get_value(line, 'Loss_train', exact_key=True)
-                            acc1_train = _get_value(line, 'Acc1_train', exact_key=True)
+                # parse, for loss, acc correlation analysis
+                if args.corr_analysis:
+                    for line in open(log_f, 'r'):
+                        if 'Just got pruned model' in line and 'Loss_train' in line:
+                            acc1_test = _get_value(line, 'Acc1', exact_key=True)
                             loss_test = _get_value(line, 'Loss_test', exact_key=True)
-                loss_train_after_ft.append(loss_train)
-                acc1_train_after_ft.append(acc1_train)
-                loss_test_after_ft.append(loss_test)
+                            acc1_train = _get_value(line, 'Acc1_train', exact_key=True)
+                            loss_train = _get_value(line, 'Loss_train', exact_key=True)
+                            acc1_test_just_finished_prune.append(acc1_test)
+                            loss_test_just_finished_prune.append(loss_test)
+                            acc1_train_just_finished_prune.append(acc1_train)
+                            loss_train_just_finished_prune.append(loss_train)
+                            break
+                
+                # get statistics for best model
+                if args.corr_analysis:
+                    for line in open(log_f, 'r'):
+                        if is_acc_line(line):
+                            best_epoch = _get_value(line, 'Best_Acc1_Epoch', exact_key=True, type_func=int)
+                            current_epoch = _get_value(line, 'Epoch', exact_key=True, type_func=int)
+                            if current_epoch == best_epoch:
+                                loss_train = _get_value(line, 'Loss_train', exact_key=True)
+                                acc1_train = _get_value(line, 'Acc1_train', exact_key=True)
+                                loss_test = _get_value(line, 'Loss_test', exact_key=True)
+                    loss_train_after_ft.append(loss_train)
+                    acc1_train_after_ft.append(acc1_train)
+                    loss_test_after_ft.append(loss_test)
+                
+                acc_last.append(acc_l)
+                acc_best.append(acc_b)
+                acc_time.append(acc_time_)
+                _, id, d = _get_exp_name_id(exp)
+                exp_id.append(id)
+                date.append(d)
+                finish_t = parse_finish_time(log_f)
+                finish_time.append(finish_t)
+                acc1_test_after_ft.append(acc_b) # for loss, acc correlation analysis
             
-            acc_last.append(acc_l)
-            acc_best.append(acc_b)
-            acc_time.append(acc_time_)
-            _, id, d = _get_exp_name_id(exp)
-            exp_id.append(id)
-            date.append(d)
-            finish_t = parse_finish_time(log_f)
-            finish_time.append(finish_t)
-            acc1_test_after_ft.append(acc_b) # for loss, acc correlation analysis
-            
+            except:
+                print(f'!! There is sth.wrong with "{exp}", please check. Continue first')
+    
     # remove outlier
     if args.remove_outlier_acc:
         n_exp_original = len(acc_best)
@@ -210,20 +218,17 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
     # print
     current_server_id = os.environ['SERVER'] if 'SERVER' in os.environ else ''
     exp_str = '[%s-%s] ' % (current_server_id, _get_project_name()) + ', '.join(exp_id) # [138-CRD] 174550, 174554, 174558
-    n_digit = 2 # acc is like 75.64
-    if len(acc_last) and acc_last[0] < 1: # acc is like 0.7564
-        n_digit = 4
     
     if len(acc_last) == 1: # only one result
-        acc_str = _make_acc_str_one_exp(acc_last[0], acc_best[0], num_digit=n_digit)
+        acc_str = _make_acc_str_one_exp(acc_last[0], acc_best[0], num_digit=args.n_decimals)
         print('[exp date: %s]' % date[-1])
         print(exp_str + ' -- ' + acc_str) # [115-CCL] 225022 -- 0.1926/0.4944 
         print('acc_time: %s' % acc_time[0])
         
     elif len(acc_last) > 1:
-        acc_last_str = _make_acc_str(acc_last, num_digit=n_digit, present='last' in present_data) # 75.84, 75.63, 75.45 – 75.64 (0.16)
-        acc_best_str = _make_acc_str(acc_best, num_digit=n_digit, present='best' in present_data)
-        print('[exp date: %s]' % date)
+        acc_last_str = _make_acc_str(acc_last, num_digit=args.n_decimals, present='last' in present_data) # 75.84, 75.63, 75.45 – 75.64 (0.16)
+        acc_best_str = _make_acc_str(acc_best, num_digit=args.n_decimals, present='best' in present_data)
+        print(f'[exp date: {", ".join(date)}]')
         print(exp_str)
         print(acc_last_str)
         print(acc_best_str)
@@ -297,7 +302,6 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
         fig.savefig(args.out_plot_path, dpi=200)
 
 
-
 def matprint(mat, fmt="g"):
     try:
         col_maxes = [max([len(("{:"+fmt+"}").format(x)) for x in col]) for col in mat.T]
@@ -309,9 +313,10 @@ def matprint(mat, fmt="g"):
         print(mat)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--kw', type=str, required=True, help='keyword for foltering exps') # to select experiment
+parser.add_argument('--kw', type=str, required=True, help='keyword for filtering expriment folders')
 parser.add_argument('--exact_kw', action='store_true', help='if true, not filter by exp_name but exactly the kw')
 parser.add_argument('--mark', type=str, default='last') # 'Epoch 240' or 'Step 11200', which is used to pin down the line that prints the best accuracy
+parser.add_argument('--metric', type=str, default='Acc1')
 parser.add_argument('--present_data', type=str, default='', choices=['', 'last', 'best', 'last,best'])
 parser.add_argument('--acc_analysis', action='store_true')
 parser.add_argument('--corr_analysis', action='store_true')
@@ -320,15 +325,17 @@ parser.add_argument('--outlier_thresh', type=float, default=0.5)
 parser.add_argument('--corr_stats', type=str, default='spearman', choices=['pearson', 'spearman', 'kendall'])
 parser.add_argument('--out_plot_path', type=str, default='plot.jpg')
 parser.add_argument('--ignore', type=str, default='')
-parser.add_argument('--acc5', action='store_true', help='print top5 accuracy, default: top1')
+parser.add_argument('--exps_folder', type=str, default='Experiments')
+parser.add_argument('--n_decimals', type=int, default=2)
 args = parser.parse_args()
+
 def main():
-    '''Usage:
+    """Usage:
         In the project dir, run:
-        python ../UtilsHub/collect_experimental_results.py 20200731-18
-    '''
+        python ../UtilsHub/experimenting/collect_experimental_results.py --kw 20200731-18
+    """
     # 1st filtering: get all the exps with the keyword
-    all_exps_ = glob.glob('Experiments/*%s*' % args.kw)
+    all_exps_ = glob.glob(f'{args.exps_folder}/*{args.kw}*')
     
     # 2nd filtering: remove all exps in args.ignore
     if args.ignore:
@@ -346,21 +353,20 @@ def main():
         all_exps = []
         for exp in all_exps_:
             name, *_ = _get_exp_name_id(exp)
-            all_exps_with_the_same_name = glob.glob('Experiments/%s_SERVER*' % name)
+            all_exps_with_the_same_name = glob.glob(f'{args.exps_folder}/{name}_SERVER*')
             for x in all_exps_with_the_same_name:
                 if x not in all_exps:
                     all_exps.append(x)
-
     all_exps.sort()
     
-    # get group exps, because each group is made up of multiple times.
+    # Get group exps, because each group is made up of multiple times.
     exp_groups = []
     for exp in all_exps:
         name, *_ = _get_exp_name_id(exp)
         if name not in exp_groups:
             exp_groups.append(name)
     
-    # analyze each independent exp (with multi-runs)
+    # Analyze each independent exp (with multi-runs)
     for exp_name in exp_groups:
         print('[%s]' % exp_name)
         print_acc_for_one_exp_group(all_exps, exp_name, args.mark, args.present_data)
