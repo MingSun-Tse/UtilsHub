@@ -344,13 +344,12 @@ def plot_weights_heatmap(weights, out_path):
     fig.savefig(out_path, dpi=200)
     plt.close(fig)
 
-def strlist_to_list(sstr, ttype):
-    '''
-        example:
+def strlist_to_list(sstr, ttype=float):
+    r"""Example:
         # self.args.stage_pr = [0, 0.3, 0.3, 0.3, 0, ]
         # self.args.skip_layers = ['1.0', '2.0', '2.3', '3.0', '3.5', ]
         turn these into a list of <ttype> (float or str or int etc.)
-    '''
+    """
     if not sstr:
         return sstr
     out = []
@@ -364,17 +363,24 @@ def strlist_to_list(sstr, ttype):
             out.append(x)
     return out
 
-def strdict_to_dict(sstr, ttype):
-    '''
-        '{"1": 0.04, "2": 0.04, "4": 0.03, "5": 0.02, "7": 0.03, }'
-    '''
+def strdict_to_dict(sstr, ttype=float):
+    r"""Example: '{"1": 0.04, "2": 0.04, "4": 0.03, "5": 0.02, "7": 0.03}'
+    """
     if not sstr:
         return sstr
     out = {}
     sstr = sstr.strip()
     if sstr.startswith('{') and sstr.endswith('}'):
         sstr = sstr[1:-1]
-    sep = ';' if ';' in sstr else ','
+    
+    if '/' in sstr:
+        sep = '/'
+    elif ';' in sstr:
+        sep = ';'
+    elif ',' in sstr:
+        sep = ','
+    else:
+        raise NotImplementedError
     for x in sstr.split(sep):
         x = x.strip()
         if x:
@@ -1210,3 +1216,26 @@ def update_args_from_file(args, config_path):
         assert k in args.__dict__, f"'{k}'' is not in original args. Please check!"
         args.__dict__[k] = v
     return args
+
+def apply_mask(model, mask, forward=True):
+    r"""Apply mask to model.
+    Args:
+        model (PyTorch model)
+        mask (dict): key is module name, value is Tensor
+    """
+    for name, m in model.named_modules():
+        if name in mask:
+            if forward:
+                m.weight.data.mul_(mask[name])
+            else: # Backward, masking gradients. Not checked this feature, may not work!
+                m.weight.grad.data.mul_(mask[name])
+    return model
+
+def isfloat(num):
+    r"""Check if a number is float.
+    """
+    try:
+        float(num)
+        return True
+    except ValueError:
+        return False
