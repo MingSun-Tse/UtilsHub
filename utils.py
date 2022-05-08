@@ -570,11 +570,10 @@ def _remove_module_in_name(name):
     new_name = '.'.join(module_name_parts_new)
     return new_name
 
-def smart_weights_load(net, w_path, key=None, load_mode='exact'):
-    '''
-        This func is to load the weights of <w_path> into <net>.
-    '''
-    common_weights_keys = ['T', 'S', 'G', 'model', 'state_dict', 'state_dict_t']
+def smart_weights_load(net, w_path, key=None, strict=True):
+    r"""Load the weights of <w_path> into <net>.
+    """
+    common_weights_keys = ['T', 'S', 'G', 'model', 'state_dict', 'state_dict_t'] # Used in previous projects, emprically set
 
     ckpt = torch.load(w_path, map_location=lambda storage, location: storage)
     
@@ -593,7 +592,7 @@ def smart_weights_load(net, w_path, key=None, load_mode='exact'):
                 print('Error: multiple or no model keys found in ckpt: %s. Please explicitly appoint one' % intersection)
                 exit(1)
 
-    if load_mode == 'exact': # net and state_dict have exactly the same architecture (layer names etc. are exactly same)
+    if strict: # net and state_dict have exactly the same architecture (layer names etc. are exactly same)
         try:
             net.load_state_dict(state_dict)
         except:
