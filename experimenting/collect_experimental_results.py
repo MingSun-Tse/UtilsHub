@@ -13,7 +13,10 @@ def _get_value(line, key, type_func=float, exact_key=False):
         value = line.split(key)[1].strip().split()[0]
         if value.endswith(')'): # hand-fix case: "Epoch 23)"
             value = value[:-1] 
-        value = type_func(value)
+        if value.endswith('%'):
+            value = type_func(value[:-1]) / 100.
+        else:
+            value = type_func(value)
     else:
         line_seg = line.split()
         for i in range(len(line_seg)):
@@ -67,12 +70,15 @@ def _make_acc_str_one_exp(acc_last, acc_best, num_digit):
 # acc line example: Acc1 71.1200 Acc5 90.3800 Epoch 840 (after update) lr 5.0000000000000016e-05 (Best_Acc1 71.3500 @ Epoch 817)
 # acc line example: Acc1 0.9195 @ Step 46600 (Best = 0.9208 @ Step 38200) lr 0.0001
 # acc line example: ==> test acc = 0.7156 @ step 80000 (best = 0.7240 @ step 21300)
-def is_acc_line(line):
+def is_acc_line(line, mark=''):
     """This function determines if a line is an accuracy line. Of course the accuracy line should meet some 
     format features which @mst used. So if these format features are changed, this func may not work.
     """
-    line = line.lower()
-    return "acc" in line and "best" in line and '@' in line and 'lr' in line and 'resume' not in line and 'finetune' not in line
+    if mark:
+        return mark in line
+    else:
+        line = line.lower()
+        return "acc" in line and "best" in line and '@' in line and 'lr' in line and 'resume' not in line and 'finetune' not in line
 
 
 def parse_metric(line, metric='Acc1'):
@@ -93,7 +99,7 @@ def parse_metric(line, metric='Acc1'):
         acc_b = _get_value(line, f'Best_{metric}', exact_key=True)
     else:
         acc_b = -1 # Not found the best metric value (not written in log)
-    return acc_l, acc_b
+    return acc_l * args.scale, acc_b * args.scale
 
 
 def parse_time(line): # TODO
@@ -152,14 +158,14 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
                 if mark == 'last': # the last number shown in the log
                     lines = open(log_f, 'r').readlines()
                     for k in range(1, len(lines) + 1):
-                        if is_acc_line(lines[-k]):
+                        if is_acc_line(lines[-k], mark=args.accline_mark):
                             acc_l, acc_b = parse_metric(lines[-k], args.metric)
                             acc_time_ = parse_time(lines[-k])
                             break
                 
                 else: # mark is like "Epoch 240 (", which explicitly points out which epoch or step
                     for line in open(log_f, 'r'):
-                        if is_acc_line(line) and mark in line:
+                        if is_acc_line(line, mark=args.accline_mark) and mark in line:
                             acc_time_ = parse_time(line)
                             acc_l, acc_b = parse_metric(line, args.metric)
                             break
@@ -185,7 +191,7 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
                 # get statistics for best model
                 if args.corr_analysis:
                     for line in open(log_f, 'r'):
-                        if is_acc_line(line):
+                        if is_acc_line(line, mark=args.accline_mark):
                             best_epoch = _get_value(line, 'Best_Acc1_Epoch', exact_key=True, type_func=int)
                             current_epoch = _get_value(line, 'Epoch', exact_key=True, type_func=int)
                             if current_epoch == best_epoch:
@@ -207,7 +213,7 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
                 acc1_test_after_ft.append(acc_b) # for loss, acc correlation analysis
             
             except:
-                print(f'!! There is sth.wrong with "{exp}", please check. Continue first')
+                print(f'!! There is sth. wrong with "{exp}", please check. Continue first')
     
     # remove outlier
     if args.remove_outlier_acc:
@@ -316,6 +322,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--kw', type=str, required=True, help='keyword for filtering expriment folders')
 parser.add_argument('--exact_kw', action='store_true', help='if true, not filter by exp_name but exactly the kw')
 parser.add_argument('--mark', type=str, default='last') # 'Epoch 240' or 'Step 11200', which is used to pin down the line that prints the best accuracy
+parser.add_argument('--accline_mark', type=str, default='')
 parser.add_argument('--metric', type=str, default='Acc1')
 parser.add_argument('--present_data', type=str, default='', choices=['', 'last', 'best', 'last,best'])
 parser.add_argument('--acc_analysis', action='store_true')
@@ -327,6 +334,7 @@ parser.add_argument('--out_plot_path', type=str, default='plot.jpg')
 parser.add_argument('--ignore', type=str, default='')
 parser.add_argument('--exps_folder', type=str, default='Experiments')
 parser.add_argument('--n_decimals', type=int, default=2)
+parser.add_argument('--scale', type=float, default=1.)
 args = parser.parse_args()
 
 def main():

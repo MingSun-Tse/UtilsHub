@@ -394,7 +394,10 @@ def strdict_to_dict(sstr, ttype=float):
 def check_path(x):
     if x:
         complete_path = glob.glob(x)
-        assert(len(complete_path) == 1)
+        if len(complete_path) > 1:
+            raise ValueError('The given path points to multiple entities. Please check!')
+        if len(complete_path) == 0:
+            raise ValueError('The given path points to no entity. Please check!')
         x = complete_path[0]
     return x
 
