@@ -29,7 +29,7 @@ def _get_value(line, key, type_func=float, exact_key=False):
 
 
 def _get_exp_name_id(exp_path):
-    """arg example: Experiments/kd-vgg13vgg8-cifar100-Temp40_SERVER5-20200727-220318
+    r"""arg example: Experiments/kd-vgg13vgg8-cifar100-Temp40_SERVER5-20200727-220318
             or kd-vgg13vgg8-cifar100-Temp40_SERVER5-20200727-220318
     """
     exp_path = exp_path.strip('/')
@@ -216,7 +216,7 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
                 print(f'!! There is sth. wrong with "{exp}", please check. Continue first')
     
     # remove outlier
-    if args.remove_outlier_acc:
+    if args.remove_outlier:
         n_exp_original = len(acc_best)
         remove_outlier(acc_best, acc_best, acc_last, exp_id, finish_time, date, acc_time)
         n_outlier = n_exp_original - len(acc_best)
@@ -251,19 +251,21 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
     if print_ft:
         print('fin_time: %s' % (finish_time))
 
-    if args.remove_outlier_acc:
-        print('Note, %d outliers have been not included' % n_outlier)
+    if args.remove_outlier:
+        print(f'Note, {n_outlier} outliers have been not included (outlier_thresh = {args.outlier_thresh})')
 
-    # print acc of the just pruned model
+    # Print acc of the just pruned model
     if len(acc1_test_just_finished_prune):
         print(f'test_acc_just_pruned: {np.mean(acc1_test_just_finished_prune):.4f} ({np.std(acc1_test_just_finished_prune):.4f})')
 
-    # accuracy analyzer
+    # Accuracy analyzer
     if args.acc_analysis:
         for exp in all_exps:
             if name in exp:
-                log_f = '%s/log/log.txt' % exp
-                AccuracyAnalyzer(log_f)
+                _, id, _ = _get_exp_name_id(exp)
+                if id in exp_id:
+                    log_f = '%s/log/log.txt' % exp
+                    AccuracyAnalyzer(log_f)
     
     # for loss, acc correlation analysis
     if args.corr_analysis and len(loss_train_just_finished_prune):
@@ -327,8 +329,8 @@ parser.add_argument('--metric', type=str, default='Acc1')
 parser.add_argument('--present_data', type=str, default='', choices=['', 'last', 'best', 'last,best'])
 parser.add_argument('--acc_analysis', action='store_true')
 parser.add_argument('--corr_analysis', action='store_true')
-parser.add_argument('--remove_outlier_acc', action='store_true')
-parser.add_argument('--outlier_thresh', type=float, default=0.5)
+parser.add_argument('--remove_outlier', action='store_true')
+parser.add_argument('--outlier_thresh', type=float, default=0.5, help='if |value - mean| > outlier_thresh, we take this value as an outlier')
 parser.add_argument('--corr_stats', type=str, default='spearman', choices=['pearson', 'spearman', 'kendall'])
 parser.add_argument('--out_plot_path', type=str, default='plot.jpg')
 parser.add_argument('--ignore', type=str, default='')
