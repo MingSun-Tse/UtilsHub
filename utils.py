@@ -1188,22 +1188,35 @@ def check_kernel_spatial_dist(model):
             print(f'{name} kernel spatial dist:')
             print(spatial.data.cpu().numpy())
 
+
 def print_format(x, fmt='%.3f', sep=' '):
     return sep.join([fmt % xi for xi in x])
 
+
 def check_grad_norm(model):
     for name, module in model.named_modules():
-        if isinstance(module, (nn.Conv2d, nn.Linear)):
+        if isinstance(module, (nn.Conv2d, nn.Linear, nn.BatchNorm2d)):
             grad_abs = module.weight.grad.abs().view(module.weight.shape[0], -1)
             grad_abs_mean = grad_abs.mean(dim=-1)
             logstr = print_format(grad_abs_mean)
             print(f'[{name:>20s}] layer grad norm: {logstr}')
 
+
+def check_grad_stats(model):
+    for name, module in model.named_modules():
+        if isinstance(module, (nn.Conv2d, nn.Linear, nn.BatchNorm2d)):
+            grad = module.weight.grad
+            grad_abs = grad.abs()
+            grad_abs_var, grad_abs_mean = grad_abs.var(), grad_abs.mean()
+            print(f'[{name:>20s}] layer grad_abs: mean {grad_abs_mean:.8f} variance {grad_abs_var:.8f}')
+
+
 def check_weight_stats(model):
     for name, module in model.named_modules():
-        if isinstance(module, (nn.Conv2d, nn.Linear)):
+        if isinstance(module, (nn.Conv2d, nn.Linear, nn.BatchNorm2d)):
             w_mean, w_std = torch.mean(module.weight), torch.std(module.weight)
             print(f'[{name:>20s}] weight mean: {w_mean:>7.4f} std: {w_std:>7.4f}')
+
 
 def update_args_from_file(args, config_path):
     import json, yaml
