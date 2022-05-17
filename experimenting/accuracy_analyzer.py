@@ -31,7 +31,7 @@ class AccuracyAnalyzer():
             self.log = log
             self.lr_state = OrderedDict()
             self.register_from_log()
-            self.analyze()
+            self.metric_sketch = self.analyze()
     
     def _register(self, lr, step, acc):
         '''
@@ -72,12 +72,15 @@ class AccuracyAnalyzer():
         vals = list(self.lr_state.values())
         max_len_step = len(str(vals[-1][-1][0])) # eg, from 0 to 10000
         format_str = 'lr %{}s (%{}d ~ %{}d) -- max_acc %6.4f | min_acc %6.4f | avg_acc %6.4f | max_acc_step %d'.format(max_len_lr, max_len_step, max_len_step)
+        metric_sketch = []
         for lr in self.lr_state.keys():
             lr_state = np.array(self.lr_state[lr])
             step = lr_state[:, 0]
             acc = lr_state[:, 1]
             max_acc_step = lr_state[np.argmax(lr_state[:, 1])][0]
             print_func(format_str % (lr, step[0], step[-1], acc.max(), acc.min(), acc.mean(), max_acc_step))
+            metric_sketch += [[acc.max(), acc.min(), acc.mean()]]
+        return metric_sketch
     
     def plot(self):
         pass
