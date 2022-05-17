@@ -56,9 +56,9 @@ def _make_acc_str(acc_list, num_digit=2, present=False):
     mean = str_format % np.mean(acc_list) if len(acc_list) else 0
     std = str_format % np.std(acc_list) if len(acc_list) else 0
     if present:
-        output = '%s (%s)' % (mean, std) # only print mean and std: 75.64 (0.16)
+        output = f'{mean}$_{{\pm{std}}}$' # Only print mean and std: 75.64 (0.16)
     else:
-        output = ', '.join(acc_str) + ' -- %s (%s)' % (mean, std) # print the result of every experiment: 75.84, 75.63, 75.45 -- 75.64 (0.16)
+        output = ', '.join(acc_str) + f' -- {mean}$_{{\pm{std}}}$' # Print the result of every experiment: 75.84, 75.63, 75.45 -- 75.64 (0.16)
     return output
 
 
@@ -149,6 +149,7 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
     loss_test_after_ft = []
     acc1_train_after_ft = []
     loss_train_after_ft = []
+
     for exp in all_exps:
         if name in exp:
             log_f = '%s/log/log.txt' % exp
@@ -260,12 +261,16 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
 
     # Accuracy analyzer
     if args.acc_analysis:
+        mean_metric_first_LR_stage = []
         for exp in all_exps:
             if name in exp:
                 _, id, _ = _get_exp_name_id(exp)
                 if id in exp_id:
                     log_f = '%s/log/log.txt' % exp
-                    AccuracyAnalyzer(log_f)
+                    analyzer = AccuracyAnalyzer(log_f)
+                    mean_metric_first_LR_stage += [analyzer.metric_sketch[0][-1]]
+        avg, std = np.mean(mean_metric_first_LR_stage), np.std(mean_metric_first_LR_stage)
+        print(f'Avg mean_metric of the 1st LR stage: {avg:.{args.n_decimals}f}$_{{\pm{std:.{args.n_decimals}f}}}$')
     
     # for loss, acc correlation analysis
     if args.corr_analysis and len(loss_train_just_finished_prune):
