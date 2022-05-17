@@ -373,14 +373,11 @@ def strdict_to_dict(sstr, ttype=float):
     if sstr.startswith('{') and sstr.endswith('}'):
         sstr = sstr[1:-1]
     
+    sep = ','
     if '/' in sstr:
         sep = '/'
     elif ';' in sstr:
         sep = ';'
-    elif ',' in sstr:
-        sep = ','
-    else:
-        raise NotImplementedError
     for x in sstr.split(sep):
         x = x.strip()
         if x:
