@@ -392,9 +392,9 @@ def check_path(x):
     if x:
         complete_path = glob.glob(x)
         if len(complete_path) > 1:
-            raise ValueError('The given path points to multiple entities. Please check!')
+            raise ValueError(f'The given path ({x}) points to multiple entities. Please check!')
         if len(complete_path) == 0:
-            raise ValueError('The given path points to no entity. Please check!')
+            raise ValueError(f'The given path ({x}) points to no entity. Please check!')
         x = complete_path[0]
     return x
 
