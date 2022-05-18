@@ -1251,3 +1251,29 @@ def isfloat(num):
         return True
     except ValueError:
         return False
+
+def smooth(x, window=50):
+    r"""Smooth a list
+    """
+    out = []
+    for i in range(len(x)):
+        if i < window:
+            out += [np.mean(x[:i])]
+        else:
+            out += [np.mean(x[i-window : i])]
+    return out
+
+def get_exp_name_id(exp_path):
+    r"""arg example: Experiments/kd-vgg13vgg8-cifar100-Temp40_SERVER5-20200727-220318
+            or kd-vgg13vgg8-cifar100-Temp40_SERVER5-20200727-220318
+            or Experiments/kd-vgg13vgg8-cifar100-Temp40_SERVER5-20200727-220318/weights/ckpt.pth
+    """
+    seps = exp_path.split(os.sep)
+    for s in seps:
+        if '_SERVER' in s:
+            exp_id = s.split('-')[-1]
+            assert exp_id.isdigit()
+            ExpID = 'SERVER' + s.split('_SERVER')[1]
+            exp_name = s.split('_SERVER')[0]
+            date = s.split('-')[-2]
+            return ExpID, exp_id, exp_name, date
