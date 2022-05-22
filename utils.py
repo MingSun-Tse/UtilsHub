@@ -116,10 +116,12 @@ def get_n_params(model):
     return total
 
 # The above 'get_n_params' requires 'param.requires_grad' to be true. In KD, for the teacher, this is not the case.
-def get_n_params_(model):
+def get_n_params_(model, sparse=False):
     n_params = 0
+    LEARNABLES = (nn.Conv1d, nn.Conv2d, nn.Conv3d, nn.Linear) # Only consider Conv2d and Linear, no BN
+    print(f'The following layers are accounted for ')
     for _, module in model.named_modules():
-        if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear): # only consider Conv2d and Linear, no BN
+        if isinstance(module, LEARNABLES):
             n_params += module.weight.numel()
             if hasattr(module, 'bias') and type(module.bias) != type(None):
                 n_params += module.bias.numel()
