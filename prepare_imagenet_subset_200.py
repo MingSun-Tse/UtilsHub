@@ -20,7 +20,7 @@ def get_relative_path(x):
     return path
 
 """Usage:
-python  prepare_imagenet_subset_200.py  ../data/imagenet 200  ../data/imagenet_subset_200  2  20220521
+python  prepare_imagenet_subset_200.py  ../data/imagenet  200  ../data/imagenet_subset_200  2  20220521
 """
 # ------------------ args
 data_dir = sys.argv[1] # Path of the ImageNet dataset folder
@@ -44,7 +44,8 @@ os.environ['PYTHONHASHSEED'] = str(rand_seed)
 # Randomly pick <n_subset_class> out of <n_class>
 n_class = len(folders_train)
 rand_index = np.random.permutation(n_class)
-print(rand_index[:100]) # Check
+np.save(f'{out_dir}_RandSeed{rand_seed}.npy', rand_index)
+
 original_cwd = os.getcwd()
 
 for ix in range(how_many):
@@ -56,6 +57,7 @@ for ix in range(how_many):
 
     begin, end = ix * n_subset_class, ix * n_subset_class + n_subset_class
     picked_folders_train = [folders_train[i] for i in rand_index[begin: end]]
+    np.save(f'{out_dir}_RandSeed{rand_seed}_{ix}.npy', rand_index[begin: end])
 
     # Create soft links -- train
     cnt = 0
