@@ -344,9 +344,6 @@ parser.add_argument('--n_decimals', type=int, default=2)
 parser.add_argument('--scale', type=float, default=1.)
 args = parser.parse_args()
 
-if 'loss' in args.metric.lower():
-    args.n_decimals = 4
-
 def main():
     """Usage:
         In the project dir, run:
