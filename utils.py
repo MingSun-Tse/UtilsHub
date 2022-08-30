@@ -119,7 +119,7 @@ def get_n_params(model):
 def get_n_params_(model, sparse=False):
     n_params = 0
     LEARNABLES = (nn.Conv1d, nn.Conv2d, nn.Conv3d, nn.Linear) # Only consider Conv2d and Linear, no BN
-    print(f'The following layers are accounted for ')
+    print(f'The following layers are accounted for: {LEARNABLES}')
     for _, module in model.named_modules():
         if isinstance(module, LEARNABLES):
             n_params += module.weight.numel()
