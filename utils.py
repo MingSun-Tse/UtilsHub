@@ -13,6 +13,7 @@ from collections import OrderedDict
 import glob
 from PIL import Image
 import pickle
+import subprocess
 
 def _weights_init(m):
     if isinstance(m, (nn.Conv2d, nn.Linear)):
@@ -1279,3 +1280,9 @@ def get_exp_name_id(exp_path):
             exp_name = s.split('_SERVER')[0]
             date = s.split('-')[-2]
             return ExpID, exp_id, exp_name, date
+
+def run_shell_command(cmd, inarg=None):
+    r"""Run shell command and return the output (string) in a list
+    """
+    result = subprocess.run(cmd.split(), stdout=subprocess.PIPE)
+    return result.stdout.decode('utf-8').strip().split('\n')
