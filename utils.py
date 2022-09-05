@@ -1255,16 +1255,12 @@ def isfloat(num):
     except ValueError:
         return False
 
-def smooth(x, window=50):
-    r"""Smooth a list
+def moving_average(x, N=10):
+    r"""Refer to: https://stackoverflow.com/questions/13728392/moving-average-or-running-mean
     """
-    out = []
-    for i in range(len(x)):
-        if i < window:
-            out += [np.mean(x[:i])]
-        else:
-            out += [np.mean(x[i-window : i])]
-    return out
+    import scipy.ndimage as ndi
+    return ndi.uniform_filter1d(x, N, mode='constant', origin=-(N//2))[:-(N-1)]
+smooth = moving_average # To maintain back-compatibility
 
 def get_exp_name_id(exp_path):
     r"""arg example: Experiments/kd-vgg13vgg8-cifar100-Temp40_SERVER5-20200727-220318
