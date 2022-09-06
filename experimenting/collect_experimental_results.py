@@ -105,6 +105,7 @@ def parse_metric(line, metric='Acc1'):
 def parse_time(line): # TODO
     if 'Epoch' in line:
         epoch = line.split('Epoch')[1].split()[0]
+        epoch = epoch.split('/')[0] if '/' in epoch else epoch
         time = int(epoch)
     elif 'Step' in line:
         time = _get_value(line, 'Step', type_func=int, exact_key=True)
