@@ -14,6 +14,7 @@ import glob
 from PIL import Image
 import pickle
 import subprocess
+import functools
 
 def _weights_init(m):
     if isinstance(m, (nn.Conv2d, nn.Linear)):
@@ -1282,3 +1283,15 @@ def run_shell_command(cmd, inarg=None):
     """
     result = subprocess.run(cmd.split(), stdout=subprocess.PIPE)
     return result.stdout.decode('utf-8').strip().split('\n')
+
+def print_runtime(fn):
+    r"""Print the running time of a routine.
+    """
+    @functools.wraps(fn)
+    def wrapper(*args, **kw):
+        t0 = time.time()
+        ret = fn(*args, **kw)
+        t1 = time.time()
+        print(f'( "{fn.__name__}" executed in {t1 - t0:.4f}s )')
+        return ret
+    return wrapper
