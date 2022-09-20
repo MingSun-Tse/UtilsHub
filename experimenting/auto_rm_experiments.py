@@ -1,5 +1,6 @@
 import sys, os, shutil
 import subprocess
+import time
 
 #################
 in_dir = sys.argv[1]
@@ -27,14 +28,28 @@ for e in exps:
             if len(os.listdir(os.path.join(e, 'weights'))) == 0:
                 cond += [True]
 
-        # Two few lines
-        lines = open(log_path).readlines()
-        if len(lines) < 50:
-            cond += [True]
-
         remove = False
         if any(cond):
             remove = True
         if remove:
             shutil.rmtree(e)
             print(f'==> Rm experiment "{e}", its last line is "{last_line}"')
+            break
+
+        # Too few lines
+        lines = open(log_path).readlines()
+        if len(lines) < 50:
+            shutil.rmtree(e)
+            print(f'==> Rm experiment "{e}", too few lines')
+            break
+
+        # Too short time (<2min)
+        timestr = log_path.split('_SERVER')[1].split('-')[1:]
+        start_time = time.strptime(timestr, '%Y%m%d-%H%M%S')
+        start_time = time.mktime(start_time)
+        last_modify_time = os.stat(log_path).st_mtime
+        duration = last_modify_time - start_time
+        if duration < 120:
+            shutil.rmtree(e)
+            print(f'==> Rm experiment "{e}", too short time (during = {duration:.2f}s)')
+            break
