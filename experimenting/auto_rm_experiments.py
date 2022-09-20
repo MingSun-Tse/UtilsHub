@@ -45,7 +45,7 @@ for e in exps:
             break
 
         # Too short time (<2min)
-        timestr = '-'.join(log_path.split('_SERVER')[1].split('-')[1:])
+        timestr = '-'.join(log_path.split('_SERVER')[1].split('/')[0].split('-')[1:])
         start_time = time.strptime(timestr, '%Y%m%d-%H%M%S')
         start_time = time.mktime(start_time)
         last_modify_time = os.stat(log_path).st_mtime
