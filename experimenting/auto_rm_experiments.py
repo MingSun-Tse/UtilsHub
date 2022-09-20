@@ -20,6 +20,12 @@ for e in exps:
         last_line = run_shell_command(f'tail -n 1 {log_path}')[0]
         # print(last_line)
         cond = [err in last_line for err in errors]
+
+        # CTRL+C
+        if last_line.startswith('KeyboardInterrupt'):
+            if len(os.listdir(os.path.join(e, 'weights'))) == 0:
+                cond += [True]
+
         remove = False
         if any(cond):
             remove = True
