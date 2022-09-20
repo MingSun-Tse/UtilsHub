@@ -38,9 +38,10 @@ for e in exps:
 
         # Too few lines
         lines = open(log_path).readlines()
-        if len(lines) < 50:
+        thresh = 50
+        if len(lines) < thresh:
             shutil.rmtree(e)
-            print(f'==> Rm experiment "{e}", too few lines')
+            print(f'==> Rm experiment "{e}", too few lines (#lines={len(lines)} < thresh={thresh})')
             break
 
         # Too short time (<2min)
@@ -49,7 +50,8 @@ for e in exps:
         start_time = time.mktime(start_time)
         last_modify_time = os.stat(log_path).st_mtime
         duration = last_modify_time - start_time
-        if duration < 120:
+        thresh = 120
+        if duration < thresh:
             shutil.rmtree(e)
-            print(f'==> Rm experiment "{e}", too short time (during = {duration:.2f}s)')
+            print(f'==> Rm experiment "{e}", too short time (during={duration:.2f}s < thresh={thresh}s)')
             break
