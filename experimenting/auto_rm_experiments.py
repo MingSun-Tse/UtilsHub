@@ -40,7 +40,7 @@ for d in os.listdir(args.Experiments):
         if not any(ign):
             exps += [ d_path ]
 
-ERRORS = ['FileNotFoundError', 'AssertionError', 'TypeError', 'NameError', 'KeyError', 
+ERRORS = ['RuntimeError', 'FileNotFoundError', 'AssertionError', 'TypeError', 'NameError', 'KeyError', 
     'OSError', 'bdb.BdbQuit', 'DGLError', 'UnicodeDecodeError', '] *************************************']
 
 for e in exps:
