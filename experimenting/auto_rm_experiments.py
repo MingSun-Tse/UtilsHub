@@ -14,7 +14,7 @@ def run_shell_command(cmd, inarg=None):
 
 exps = [os.path.join(in_dir, d) for d in os.listdir(in_dir) if os.path.isdir(os.path.join(in_dir, d))]
 errors = ['FileNotFoundError', 'AssertionError', 'TypeError', 'NameError', 'KeyError', 
-    'OSError', 'bdb.BdbQuit', 'DGLError', 'UnicodeDecodeError']
+    'OSError', 'bdb.BdbQuit', 'DGLError', 'UnicodeDecodeError', '] *************************************']
 
 for e in exps:
     log_path = os.path.join(e, 'log', 'log.txt')
