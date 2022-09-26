@@ -132,7 +132,7 @@ class JobManager():
                     if volatile.isdigit() and memory.isdigit():
                         volatile = float(volatile) / 100.
                         memory = float(memory)
-                        if volatile < 0.05 and memory < 100: # this condition is empirical. May be improved.
+                        if volatile < 0.05 and memory < 300: # this condition is empirical. May be improved.
                             gpu_id = lines[i - 1].split()[1] # example: |   1  GeForce RTX 208...  Off  | 00000000:02:00.0 Off |                  N/A |
                             free_gpus.append(gpu_id)
                             print(f'found free gpu {gpu_id}')
@@ -155,12 +155,11 @@ class JobManager():
         """run 3 times to get a stable result
         """
         unavailable_gpus = args.unavailable_gpus.split(',')
-        available_gpus = args.available_gpus.split(',')
         free_gpus_1 = self.get_free_GPU_once()
         free_gpus_2 = self.get_free_GPU_once()
         free_gpus_3 = self.get_free_GPU_once()
         free_gpus = [x for x in free_gpus_1 if x in free_gpus_2 and x in free_gpus_3 and (x not in unavailable_gpus)]
-        return free_gpus + available_gpus
+        return free_gpus
     
     def run(self):
         while 1:
@@ -202,7 +201,6 @@ parser.add_argument('--script', type=str, required=True)
 parser.add_argument('--times', type=int, default=1, help='each experiment will be run by <times> times')
 parser.add_argument('--ignore', type=str, default='', help='ignore scripts that are not expected to run. separated by comma. example: wrn,resnet56')
 parser.add_argument('--unavailable_gpus', type=str, default=',', help='gpus that are unavailable')
-parser.add_argument('--available_gpus', type=str, default=',', help='gpus that are always available')
 parser.add_argument('--debug', action='store_true')
 args = parser.parse_args()
 def main():
