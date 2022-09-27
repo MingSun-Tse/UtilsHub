@@ -1,4 +1,4 @@
-import sys, os, time
+import sys, os, time, socket
 import numpy as np
 from scipy import stats
 import glob, copy
@@ -223,8 +223,13 @@ def print_acc_for_one_exp_group(all_exps, name, mark, present_data):
         remove_outlier(acc_best, acc_best, acc_last, exp_id, finish_time, date, acc_time)
         n_outlier = n_exp_original - len(acc_best)
     
-    # print
-    current_server_id = os.environ['SERVER'] if 'SERVER' in os.environ else ''
+    # Print
+    # Get IP address. Refer to: https://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    ip = s.getsockname()[0]
+    s.close()
+    current_server_id = '%03d' % int(ip.split('.')[-1])
     exp_str = '[%s-%s] ' % (current_server_id, _get_project_name()) + ', '.join(exp_id) # [138-CRD] 174550, 174554, 174558
     
     if len(acc_last) == 1: # only one result
