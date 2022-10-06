@@ -99,7 +99,7 @@ class JobManager():
         jobs = []
         for line in open(self.jobs_txt):
             line = line.strip()
-            if line and (not line.startswith('[Done')):
+            if line and not (line.startswith('[Done') or line.startswith('#')):
                 jobs.append(line)
         return jobs
     
