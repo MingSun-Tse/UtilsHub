@@ -118,7 +118,7 @@ class JobManager():
         get_gpu_successully = False
         while not get_gpu_successully:
             f = '.wh_GPU_status_%s.txt' % time.time()
-            os.system('nvidia-smi >> %s' % f)
+            os.system('nvidia-smi > %s' % f)
             lines = open(f).readlines()
             os.remove(f)
             get_gpu_successully = True
@@ -128,14 +128,14 @@ class JobManager():
                 # get free gpus by utility 
                 if 'MiB /' in line: # example: | 41%   31C    P8     4W / 260W |      1MiB / 11019MiB |      76%      Default |
                     volatile = line.split('%')[-2].split()[-1]
-                    memory = line.split('/')[1].split('|')[1].split('MiB')[0].strip()
+                    memory = line.split(' | ')[1].split('MiB')[0].strip()
                     if volatile.isdigit() and memory.isdigit():
                         volatile = float(volatile) / 100.
                         memory = float(memory)
-                        if volatile < 0.05 and memory < 300: # this condition is empirical. May be improved.
+                        if volatile < 0.05 and memory < 300: # This condition is empirical. May be improved.
                             gpu_id = lines[i - 1].split()[1] # example: |   1  GeForce RTX 208...  Off  | 00000000:02:00.0 Off |                  N/A |
                             free_gpus.append(gpu_id)
-                            print(f'found free gpu {gpu_id}')
+                            print(f'Found free gpu {gpu_id}')
                     else: # the log may be broken, access it again
                         print(line)
                         get_gpu_successully = False
