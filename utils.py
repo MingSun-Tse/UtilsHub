@@ -1278,6 +1278,18 @@ def get_exp_name_id(exp_path):
             date = s.split('-')[-2]
             return ExpID, exp_id, exp_name, date
 
+def get_script_from_log(log_path, max_lines=10):
+    r"""Get the script from a log txt file.
+    """
+    cnt = 0
+    for line in open(log_path):
+        cnt += 1
+        line = line.strip()
+        if line.startswith('CUDA_VISIBLE_DEVICES='):
+            return line
+        if cnt == max_lines:
+            return None
+
 def run_shell_command(cmd, inarg=None):
     r"""Run shell command and return the output (string) in a list
     """
