@@ -48,6 +48,9 @@ def is_ignore(line):
     for x in args.ignore:
         if len(x) and x in line:
             ignore = True
+    for x in args.include:
+        if len(x) and x not in line:
+            ignore = True
     return ignore
 
 def strftime():
@@ -205,11 +208,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--script', type=str, required=True)
 parser.add_argument('--times', type=int, default=1, help='each experiment will be run by <times> times')
 parser.add_argument('--ignore', type=str, default='', help='ignore scripts that are not expected to run. separated by comma. example: wrn,resnet56')
+parser.add_argument('--include', type=str, default='', help='include scripts that are not expected to run. separated by comma. example: wrn,resnet56')
 parser.add_argument('--unavailable_gpus', type=str, default=',', help='gpus that are unavailable')
 parser.add_argument('--debug', action='store_true')
 args = parser.parse_args()
 def main():
     args.ignore = args.ignore.split(',')
+    args.include = args.include.split(',')
     job_manager = JobManager(args.script)
     job_manager.run()
 
