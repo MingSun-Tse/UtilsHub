@@ -61,22 +61,27 @@ class JobManager():
             line = line.strip()
             if line == '' or line.startswith('#'):
                 continue
-            if '=' in line and (not line.startswith('python')) :
-                k, v = line.split('=')
-                if v[0] == '"' and v[-1] == '"': # example: T="vgg13"
-                    v = v[1:-1]
-                if '$' in v:
-                    var_dict[k] = replace_var(v, var_dict)
-                else:
-                    var_dict[k] = v
+
+            # if '=' in line and (not line.startswith('python')) :
+            #     k, v = line.split('=')
+            #     if v[0] == '"' and v[-1] == '"': # example: T="vgg13"
+            #         v = v[1:-1]
+            #     if '$' in v:
+            #         var_dict[k] = replace_var(v, var_dict)
+            #     else:
+            #         var_dict[k] = v
             
-            # collect jobs
+            # Remove CUDA_VISIBLE_DEVICES
+            if line.startswith('CUDA_VISIBLE_DEVICES='):
+                line = line.split()[1:]
+                line = ' '.join(line)
+
+            # Collect jobs
             if line.startswith('python') or line.startswith('sh'):
                 new_line = replace_var(line, var_dict)
                 if not is_ignore(new_line):
                     jobs.append(new_line)
                     print(f'[{strftime()}] {len(jobs)} Got a job: "{new_line}"')
-                    
         
         jobs = jobs * args.times # repeat
         print(f'[{strftime()}] Jobs will be repeated by {args.times} times.')
