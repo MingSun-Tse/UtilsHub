@@ -152,7 +152,9 @@ class JobManager():
         jobs = []
         for line in open(self.jobs_txt):
             line = line.strip()
-            if line and not (line.startswith('[Done') or line.startswith('#')):
+            if line and not (line.startswith('[Done') or line.startswith('#')): # TODO: improve end mark
+                if ' ==> ' in line:
+                    line = line.split(' ==> ')[1] # TODO: make this general
                 jobs.append(line)
         return jobs
     
