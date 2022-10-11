@@ -68,22 +68,21 @@ def is_ignore(line):
     for x in args.include:
         if len(x) and x not in line:
             ignore = True
-    exp_name = line.split('--project ')[1].strip().split()[0]
-    exp_name = exp_name.split('_SERVER')[0]
-    project = os.getcwd().split('/Projects/')[1]
-    ignore = ignore or ignore_by_querying_hub(project, exp_name)
     return ignore
 
 def strftime():
     return time.strftime("%Y/%m/%d-%H:%M:%S")
 
-def ignore_by_querying_hub(project, exp_name, userip='wanghuan@155.33.198.138'):
-    script = f'sshpass -p 8 ssh {userip} "ls $HOME/Projects/{project}/Experiments | grep {exp_name}_SERVER | wc -l > tmp.txt"'
+def query_hub(script, userip='wanghuan@155.33.198.138'):
+    exp_name = script.split('--project ')[1].strip().split()[0]
+    exp_name = exp_name.split('_SERVER')[0]
+    project = os.getcwd().split('/Projects/')[1]
+    script = f'sshpass -p 8 ssh {userip} "ls $HOME/Projects/{project}/Experiments | grep {exp_name}_SERVER | wc -l" > tmp.txt'
+    os.system(script)
     cnt = open('tmp.txt').readline().strip()
-    ignore = int(cnt) >= 3
-    print(f'exp_name: {exp_name}, Hub cnt: {int(cnt)}')
+    # print(f'exp_name: {exp_name}, Hub cnt: {int(cnt)}')
     os.remove('tmp.txt')
-    return  
+    return  int(cnt)
 
 class JobManager():
     def __init__(self, script_f):
@@ -123,8 +122,17 @@ class JobManager():
                         jobs.append(new_line)
                         print(f'[{strftime()}] {len(jobs)} Got a job: "{new_line}"')
         
-        jobs = jobs * args.times # repeat
-        print(f'[{strftime()}] Jobs will be repeated by {args.times} times.')
+        repeated_jobs = jobs * args.times # repeat
+        print(f'[{strftime()}] Jobs will be repeated by {args.times} times. #total_jobs: {len(repeated_jobs)}')
+
+        # Filter by querying the hub
+        for j in jobs:
+            cnt = query_hub(j)
+            left = 0 if cnt >= args.times else args.times - cnt
+            for _ in range(args.times - left):
+                repeated_jobs.remove(j)
+                print(f'[{strftime()}] Remove job "{j}". Left cnt for this job: {left}. Now #total_jobs: {len(repeated_jobs)}')
+        jobs = repeated_jobs
 
         self.jobs_txt = '.auto_run_jobs_%s.txt' % time.strftime("%Y%m%d_%H%M%S")
         with open(self.jobs_txt, 'w') as f:
@@ -153,7 +161,7 @@ class JobManager():
         for line in open(self.jobs_txt):
             line = line.strip()
             if line == job:
-                line = f'[Done, GPU #{gpu}] ' + line
+                line = f'# [Done, GPU #{gpu}] ' + line
             new_txt += line + '\n'
         with open(self.jobs_txt, 'w') as f:
             f.write(new_txt)
