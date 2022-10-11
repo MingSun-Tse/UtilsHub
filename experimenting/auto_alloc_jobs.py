@@ -107,6 +107,9 @@ class JobManager():
                 line = line.split()[1:]
                 line = ' '.join(line)
 
+            if ' ==> ' in line:
+                line = line.split(' ==> ')[1].strip()
+
             # Collect jobs
             if 'python ' in line or 'sh ' in line:
                 new_line = replace_var(line, var_dict)
@@ -153,8 +156,6 @@ class JobManager():
         for line in open(self.jobs_txt):
             line = line.strip()
             if line and not (line.startswith('[Done') or line.startswith('#')): # TODO: improve end mark
-                if ' ==> ' in line:
-                    line = line.split(' ==> ')[1] # TODO: make this general
                 jobs.append(line)
         return jobs
     
