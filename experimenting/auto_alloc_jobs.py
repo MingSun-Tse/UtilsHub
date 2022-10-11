@@ -3,6 +3,23 @@ import argparse
 import functools
 print = functools.partial(print, flush=True)
 
+EXPS = ['kd__wrn_40_2wrn_16_2__tinyimagenet__flip', 'kd__resnet56ShuffleV2__tinyimagenet__cropflip', 'kd__wrn_40_2wrn_16_2__tinyimagenet__cutout', 'kd__wrn_40_2vgg8__tinyimagenet__cutout', 'kd__wrn_40_2wrn_16_2__tinyimagenet__autoaugment', 'kd__wrn_40_2vgg8__tinyimagenet__autoaugment', 'kd__wrn_40_2vgg8__tinyimagenet__autoaugment', 'kd__resnet56ShuffleV2__tinyimagenet__autoaugment', 'kd__wrn_40_2wrn_16_2__tinyimagenet__mixup', 'kd__wrn_40_2vgg8__tinyimagenet__mixup', 'kd__wrn_40_2vgg8__tinyimagenet__cutmix', 'kd__resnet56ShuffleV2__tinyimagenet__cutmix', 'kd__wrn_40_2wrn_16_2__tinyimagenet__cutmix_pick_Sentropy', 'kd__wrn_40_2wrn_16_2__tinyimagenet__cutmix_pick_Sentropy', 'kd__wrn_40_2vgg8__tinyimagenet__cutmix_pick_Sentropy', 'kd__resnet56ShuffleV2__tinyimagenet__cutmix_pick_Sentropy', 'kd__resnet56ShuffleV2__tinyimagenet__cutmix_pick_Sentropy', 'kd__wrn_40_2wrn_16_2__tinyimagenet__cutmix_pick_Tentropy', 'kd__wrn_40_2vgg8__tinyimagenet__cutmix_pick_Tentropy', 'kd__wrn_40_2vgg8__tinyimagenet__cutmix_pick_Tentropy', 'kd__resnet56ShuffleV2__tinyimagenet__cutmix_pick_Tentropy', 'kd__resnet56ShuffleV2__tinyimagenet__cutmix_pick_Tentropy', 'kd__resnet32x4ShuffleV2__cifar100__cutmix_pick_Sentropy', 'kd__vgg13vgg8__tinyimagenet__cutout', 'kd__vgg13vgg8__tinyimagenet__cutout', 'kd__vgg13vgg8__tinyimagenet__cutout', 'kd__vgg13MobileNetV2__tinyimagenet__cutout', 'kd__vgg13MobileNetV2__tinyimagenet__cutout', 'kd__vgg13MobileNetV2__tinyimagenet__cutout', 'kd__resnet32x4resnet8x4__tinyimagenet__cutout', 'kd__ResNet50vgg8__tinyimagenet__cutout', 'kd__resnet32x4resnet8x4__tinyimagenet__autoaugment', 'kd__ResNet50vgg8__tinyimagenet__autoaugment', 'kd__resnet32x4resnet8x4__tinyimagenet__mixup', 'kd__resnet32x4ShuffleV2__tinyimagenet__mixup', 'kd__ResNet50vgg8__tinyimagenet__mixup', 'kd__resnet32x4resnet8x4__tinyimagenet__cutmix_pick_Sentropy', 'kd__resnet32x4resnet8x4__tinyimagenet__cutmix_pick_Sentropy', 'kd__resnet32x4ShuffleV2__tinyimagenet__cutmix_pick_Sentropy', 'kd__resnet32x4ShuffleV2__tinyimagenet__cutmix_pick_Sentropy', 'kd__ResNet50vgg8__tinyimagenet__cutmix_pick_Sentropy']
+
+def get_exp_name_id(exp_path):
+    r"""arg example: Experiments/kd-vgg13vgg8-cifar100-Temp40_SERVER5-20200727-220318
+            or kd-vgg13vgg8-cifar100-Temp40_SERVER5-20200727-220318
+            or Experiments/kd-vgg13vgg8-cifar100-Temp40_SERVER5-20200727-220318/weights/ckpt.pth
+    """
+    seps = exp_path.split(os.sep)
+    for s in seps:
+        if '_SERVER' in s:
+            exp_id = s.split('-')[-1]
+            assert exp_id.isdigit()
+            ExpID = 'SERVER' + s.split('_SERVER')[1]
+            exp_name = s.split('_SERVER')[0]
+            date = s.split('-')[-2]
+            return ExpID, exp_id, exp_name, date
+
 def replace_var(line, var_dict):
     """This function is to replace the variables in shell script.
     """
@@ -83,8 +100,16 @@ class JobManager():
             if line.startswith('python') or line.startswith('sh'):
                 new_line = replace_var(line, var_dict)
                 if not is_ignore(new_line):
-                    jobs.append(new_line)
-                    print(f'[{strftime()}] {len(jobs)} Got a job: "{new_line}"')
+                    if args.predefined_exps:
+                        exp_name = new_line.split('--project ')[1].strip().split()[0]
+                        exp_name = exp_name.split('_SERVER')[0]
+                        if exp_name in EXPS:
+                            how_many = len([x for x in EXPS if x == exp_name])
+                            jobs += [new_line] * how_many
+                            print(f'[{strftime()}] {len(jobs)} Got a job: "{new_line}". Repeated by {how_many} times')
+                    else:
+                        jobs.append(new_line)
+                        print(f'[{strftime()}] {len(jobs)} Got a job: "{new_line}"')
         
         jobs = jobs * args.times # repeat
         print(f'[{strftime()}] Jobs will be repeated by {args.times} times.')
@@ -211,12 +236,16 @@ parser.add_argument('--ignore', type=str, default='', help='ignore scripts that 
 parser.add_argument('--include', type=str, default='', help='include scripts that are not expected to run. separated by comma. example: wrn,resnet56')
 parser.add_argument('--unavailable_gpus', type=str, default=',', help='gpus that are unavailable')
 parser.add_argument('--debug', action='store_true')
+parser.add_argument('--predefined_exps', action='store_true')
+parser.add_argument('--hold', action='store_true')
 args = parser.parse_args()
 def main():
     args.ignore = args.ignore.split(',')
     args.include = args.include.split(',')
     job_manager = JobManager(args.script)
     job_manager.run()
+    if args.hold:
+        time.sleep(36000000)
 
 if __name__ == '__main__':
     main()
