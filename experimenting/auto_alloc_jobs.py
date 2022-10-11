@@ -68,10 +68,22 @@ def is_ignore(line):
     for x in args.include:
         if len(x) and x not in line:
             ignore = True
+    exp_name = line.split('--project ')[1].strip().split()[0]
+    exp_name = exp_name.split('_SERVER')[0]
+    project = os.getcwd().split('/Projects/')[1]
+    ignore = ignore or ignore_by_querying_hub(project, exp_name)
     return ignore
 
 def strftime():
     return time.strftime("%Y/%m/%d-%H:%M:%S")
+
+def ignore_by_querying_hub(project, exp_name, userip='wanghuan@155.33.198.138'):
+    script = f'sshpass -p 8 ssh {userip} "ls $HOME/Projects/{project}/Experiments | grep {exp_name}_SERVER | wc -l > tmp.txt"'
+    cnt = open('tmp.txt').readline().strip()
+    ignore = int(cnt) >= 3
+    print(f'exp_name: {exp_name}, Hub cnt: {int(cnt)}')
+    os.remove('tmp.txt')
+    return  
 
 class JobManager():
     def __init__(self, script_f):
