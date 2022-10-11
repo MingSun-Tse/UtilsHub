@@ -201,7 +201,7 @@ class JobManager():
                     program = line.split()[4]
                     if program in ['python', 'python2', 'python3', 'matlab']:
                         busy_gpus.append(gpu_id)
-                        print(f'got busy gpu {gpu_id}')
+                        print(f'Found busy gpu {gpu_id}')
         return [x for x in free_gpus if x not in busy_gpus]
     
     def get_free_GPU(self):
