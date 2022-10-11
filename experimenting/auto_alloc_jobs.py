@@ -108,7 +108,7 @@ class JobManager():
                 line = ' '.join(line)
 
             # Collect jobs
-            if line.startswith('python') or line.startswith('sh'):
+            if 'python ' in line or 'sh ' in line:
                 new_line = replace_var(line, var_dict)
                 if not is_ignore(new_line):
                     if args.predefined_exps:
