@@ -76,8 +76,9 @@ def strftime():
 def query_hub(script, userip='wanghuan@155.33.198.138'):
     exp_name = script.split('--project ')[1].strip().split()[0]
     exp_name = exp_name.split('_SERVER')[0]
-    project = os.getcwd().split('/Projects/')[1]
-    script = f'sshpass -p 8 ssh {userip} "ls $HOME/Projects/{project}/Experiments | grep {exp_name}_SERVER | wc -l" > tmp.txt'
+    project = os.getcwd().split('/')[-1]
+    # os.system(f'echo Y | ssh {userip}')
+    script = f'echo Y | sshpass -p 8 ssh {userip} "ls $HOME/Projects/{project}/Experiments | grep {exp_name}_SERVER | wc -l" > tmp.txt'
     os.system(script)
     cnt = open('tmp.txt').readline().strip()
     # print(f'exp_name: {exp_name}, Hub cnt: {int(cnt)}')
@@ -137,13 +138,13 @@ class JobManager():
                 print(f'[{strftime()}] Remove job "{j}". Left cnt for this job: {left}. Now #total_jobs: {len(repeated_jobs)}')
         jobs = repeated_jobs
 
-        self.jobs_txt = '.auto_run_jobs_%s.txt' % time.strftime("%Y%m%d_%H%M%S")
-        with open(self.jobs_txt, 'w') as f:
+        self.jobs_txt = script_f.replace('.sh', '.txt')
+        with open(self.jobs_txt, 'a+') as f:
             for ix, j in enumerate(jobs):
                 f.write('%s ==> %s\n\n' % (ix, j))
         print(f'[{strftime()}] Save jobs to {self.jobs_txt}')
 
-        # save a summarized script
+        # Save a summarized script
         summary = script_f.replace('.sh', '_summary.sh')
         with open(summary, 'w') as f:
             for j in jobs:
@@ -261,6 +262,7 @@ parser.add_argument('--unavailable_gpus', type=str, default=',', help='gpus that
 parser.add_argument('--debug', action='store_true')
 parser.add_argument('--predefined_exps', action='store_true')
 parser.add_argument('--hold', action='store_true')
+parser.add_argument('--job_name', type=str)
 args = parser.parse_args()
 def main():
     args.ignore = args.ignore.split(',')
