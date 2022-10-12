@@ -71,7 +71,7 @@ def remove_CUDA(lines):
         if line.startswith('CUDA_VISIBLE_DEVICES='):
             line = line.split()[1:]
             line = ' '.join(line)
-            out += [line]
+        out += [line]
     return out
 
 def remove_nohup(lines):
@@ -79,7 +79,7 @@ def remove_nohup(lines):
     for line in lines:
         if line.startswith('nohup ') and ' > /dev/null' in line:
             line = line.split('nohup ')[1].split(' > /dev/null')[0]
-            out += [line]
+        out += [line]
     return out
 
 def is_ignore(line):
