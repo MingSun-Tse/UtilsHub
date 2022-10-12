@@ -96,11 +96,15 @@ def strftime():
     return time.strftime("%Y/%m/%d-%H:%M:%S")
 
 def query_hub(script, userip='wanghuan@155.33.198.138'):
+    if args.hub_userip:
+        userip = args.userip
+    if args.hub_passwd:
+        passwd = args.hub_passwd
     exp_name = script.split('--project ')[1].strip().split()[0]
     exp_name = exp_name.split('_SERVER')[0]
     project = os.getcwd().split('/')[-1]
     # os.system(f'echo Y | ssh {userip}')
-    script = f'echo Y | sshpass -p 8 ssh {userip} "ls $HOME/Projects/{project}/Experiments | grep {exp_name}_SERVER | wc -l" > tmp.txt'
+    script = f'echo Y | sshpass -p {passwd} ssh {userip} "ls $HOME/Projects/{project}/Experiments | grep {exp_name}_SERVER | wc -l" > tmp.txt'
     os.system(script)
     cnt = open('tmp.txt').readline().strip()
     # print(f'exp_name: {exp_name}, Hub cnt: {int(cnt)}')
@@ -274,6 +278,8 @@ parser.add_argument('--unavailable_gpus', type=str, default=',', help='gpus that
 parser.add_argument('--debug', action='store_true')
 parser.add_argument('--predefined_exps', action='store_true')
 parser.add_argument('--hold', action='store_true')
+parser.add_argument('--hub_userip', type=str)
+parser.add_argument('--hub_passwd', type=str)
 args = parser.parse_args()
 def main():
     args.ignore = args.ignore.split(',')
