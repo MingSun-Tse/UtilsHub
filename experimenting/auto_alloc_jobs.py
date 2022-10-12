@@ -49,16 +49,38 @@ def replace_var(line, var_dict):
             line_copy = line_copy.replace(var_name, real_var)
     return line_copy
 
-def remove_comments(f):
-    """remove # comments in script files
+def standard_sep(lines):
+    return [' '.join(line.split()) for line in lines]
+
+def remove_comments(lines):
+    r"""remove # comments in script files
     """
-    lines = []
-    for line in open(f, 'r'):
+    out = []
+    for line in lines:
         if '#' in line:
             index = line.find('#') # get the index of the first #
             line = line[:index]
-        lines.append(line)
-    return lines
+        out += [line]
+    return out
+
+def remove_CUDA(lines):
+    r"""Remove CUDA_VISIBLE_DEVICES
+    """
+    out = []
+    for line in lines:
+        if line.startswith('CUDA_VISIBLE_DEVICES='):
+            line = line.split()[1:]
+            line = ' '.join(line)
+            out += [line]
+    return out
+
+def remove_nohup(lines):
+    out = []
+    for line in lines:
+        if line.startswith('nohup ') and ' > /dev/null' in line:
+            line = line.split('nohup ')[1].split(' > /dev/null')[0]
+            out += [line]
+    return out
 
 def is_ignore(line):
     ignore = False
@@ -88,12 +110,15 @@ def query_hub(script, userip='wanghuan@155.33.198.138'):
 class JobManager():
     def __init__(self, script_f):
         jobs, var_dict = [], {}
-        lines = remove_comments(script_f)
+        lines = [x.strip() for x in open(script_f) if x.strip()]
+        
+        # Preprocessing
+        lines = standard_sep(lines)
+        lines = remove_comments(lines)
+        lines = remove_CUDA(lines)
+        lines = remove_nohup(lines)
+        
         for line in lines:
-            line = line.strip()
-            if line == '' or line.startswith('#'):
-                continue
-
             # if '=' in line and (not line.startswith('python')) :
             #     k, v = line.split('=')
             #     if v[0] == '"' and v[-1] == '"': # example: T="vgg13"
@@ -103,11 +128,6 @@ class JobManager():
             #     else:
             #         var_dict[k] = v
             
-            # Remove CUDA_VISIBLE_DEVICES
-            if line.startswith('CUDA_VISIBLE_DEVICES='):
-                line = line.split()[1:]
-                line = ' '.join(line)
-
             if ' ==> ' in line:
                 line = line.split(' ==> ')[1].strip()
 
@@ -127,7 +147,7 @@ class JobManager():
                         print(f'[{strftime()}] {len(jobs)} Got a job: "{new_line}"')
         
         repeated_jobs = jobs * args.times # repeat
-        print(f'[{strftime()}] Jobs will be repeated by {args.times} times. #total_jobs: {len(repeated_jobs)}')
+        print(f'[{strftime()}] Jobs will be repeated by {args.times} times. Expected #total_jobs: {len(repeated_jobs)}')
 
         # Filter by querying the hub
         for j in jobs:
@@ -144,14 +164,6 @@ class JobManager():
                 f.write('%s ==> %s\n\n' % (ix, j))
         print(f'[{strftime()}] Save jobs to {self.jobs_txt}')
 
-        # Save a summarized script
-        summary = script_f.replace('.sh', '_summary.sh')
-        with open(summary, 'w') as f:
-            for j in jobs:
-                script = f'CUDA_VISIBLE_DEVICES=0 nohup {j} > /dev/null 2>&1 &\n\n'
-                f.write(script)
-        print(f'[{strftime()}] Save jobs to {summary}')
-
     def read_jobs(self):
         jobs = []
         for line in open(self.jobs_txt):
@@ -165,7 +177,7 @@ class JobManager():
         for line in open(self.jobs_txt):
             line = line.strip()
             if line == job:
-                line = f'# [Done, GPU #{gpu}] ' + line
+                line = f'# [Done, GPU={gpu}] ' + line
             new_txt += line + '\n'
         with open(self.jobs_txt, 'w') as f:
             f.write(new_txt)
@@ -262,7 +274,6 @@ parser.add_argument('--unavailable_gpus', type=str, default=',', help='gpus that
 parser.add_argument('--debug', action='store_true')
 parser.add_argument('--predefined_exps', action='store_true')
 parser.add_argument('--hold', action='store_true')
-parser.add_argument('--job_name', type=str)
 args = parser.parse_args()
 def main():
     args.ignore = args.ignore.split(',')
