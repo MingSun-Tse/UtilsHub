@@ -27,6 +27,10 @@ def remove_exp(exp_path):
     os.system(script)
     return trash_dir
 
+def legal_exp_full_name(name):
+    
+    
+    
 
 def run_shell_command(cmd, inarg=None):
     r"""Run shell command and return the output (string) in a list
@@ -43,6 +47,7 @@ os.system(f'rm -rf {args.Experiments}/_SERVER*')
 # Get all exps
 exps = []
 for d in os.listdir(args.Experiments):
+    if '_SERVER'
     d_path = os.path.join(args.Experiments, d)
     if os.path.isdir(d_path):
         ign = [fnmatch(d, i) for i in ignore]
