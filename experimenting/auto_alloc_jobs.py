@@ -5,6 +5,21 @@ print = functools.partial(print, flush=True)
 
 EXPS = ['kd__wrn_40_2wrn_16_2__tinyimagenet__flip', 'kd__resnet56ShuffleV2__tinyimagenet__cropflip', 'kd__wrn_40_2wrn_16_2__tinyimagenet__cutout', 'kd__wrn_40_2vgg8__tinyimagenet__cutout', 'kd__wrn_40_2wrn_16_2__tinyimagenet__autoaugment', 'kd__wrn_40_2vgg8__tinyimagenet__autoaugment', 'kd__wrn_40_2vgg8__tinyimagenet__autoaugment', 'kd__resnet56ShuffleV2__tinyimagenet__autoaugment', 'kd__wrn_40_2wrn_16_2__tinyimagenet__mixup', 'kd__wrn_40_2vgg8__tinyimagenet__mixup', 'kd__wrn_40_2vgg8__tinyimagenet__cutmix', 'kd__resnet56ShuffleV2__tinyimagenet__cutmix', 'kd__wrn_40_2wrn_16_2__tinyimagenet__cutmix_pick_Sentropy', 'kd__wrn_40_2wrn_16_2__tinyimagenet__cutmix_pick_Sentropy', 'kd__wrn_40_2vgg8__tinyimagenet__cutmix_pick_Sentropy', 'kd__resnet56ShuffleV2__tinyimagenet__cutmix_pick_Sentropy', 'kd__resnet56ShuffleV2__tinyimagenet__cutmix_pick_Sentropy', 'kd__wrn_40_2wrn_16_2__tinyimagenet__cutmix_pick_Tentropy', 'kd__wrn_40_2vgg8__tinyimagenet__cutmix_pick_Tentropy', 'kd__wrn_40_2vgg8__tinyimagenet__cutmix_pick_Tentropy', 'kd__resnet56ShuffleV2__tinyimagenet__cutmix_pick_Tentropy', 'kd__resnet56ShuffleV2__tinyimagenet__cutmix_pick_Tentropy', 'kd__resnet32x4ShuffleV2__cifar100__cutmix_pick_Sentropy', 'kd__vgg13vgg8__tinyimagenet__cutout', 'kd__vgg13vgg8__tinyimagenet__cutout', 'kd__vgg13vgg8__tinyimagenet__cutout', 'kd__vgg13MobileNetV2__tinyimagenet__cutout', 'kd__vgg13MobileNetV2__tinyimagenet__cutout', 'kd__vgg13MobileNetV2__tinyimagenet__cutout', 'kd__resnet32x4resnet8x4__tinyimagenet__cutout', 'kd__ResNet50vgg8__tinyimagenet__cutout', 'kd__resnet32x4resnet8x4__tinyimagenet__autoaugment', 'kd__ResNet50vgg8__tinyimagenet__autoaugment', 'kd__resnet32x4resnet8x4__tinyimagenet__mixup', 'kd__resnet32x4ShuffleV2__tinyimagenet__mixup', 'kd__ResNet50vgg8__tinyimagenet__mixup', 'kd__resnet32x4resnet8x4__tinyimagenet__cutmix_pick_Sentropy', 'kd__resnet32x4resnet8x4__tinyimagenet__cutmix_pick_Sentropy', 'kd__resnet32x4ShuffleV2__tinyimagenet__cutmix_pick_Sentropy', 'kd__resnet32x4ShuffleV2__tinyimagenet__cutmix_pick_Sentropy', 'kd__ResNet50vgg8__tinyimagenet__cutmix_pick_Sentropy']
 
+
+class Job():
+    def __init__(self, line=None, script=None, ID=None):
+        if line is not None:
+            line = line.strip()
+            ID, script = line.split (' ==> ')
+        self._script = script
+        self._id = ID
+
+    def get_script(self):
+        return self._script
+
+    def format_print(self):
+        return f'{self._id} ==> {self._script}'
+
 def get_exp_name_id(exp_path):
     r"""arg example: Experiments/kd-vgg13vgg8-cifar100-Temp40_SERVER5-20200727-220318
             or kd-vgg13vgg8-cifar100-Temp40_SERVER5-20200727-220318
@@ -100,7 +115,7 @@ def query_hub(script, userip='wanghuan@155.33.198.138', passwd='8'):
         userip = args.userip
     if args.hub_passwd:
         passwd = args.hub_passwd
-    exp_name = script.split('--project ')[1].strip().split()[0]
+    exp_name = script.split('--project ')[1].strip().split()[0] ## TODO
     exp_name = exp_name.split('_SERVER')[0]
     project = os.getcwd().split('/')[-1]
     # os.system(f'echo Y | ssh {userip}')
@@ -113,7 +128,6 @@ def query_hub(script, userip='wanghuan@155.33.198.138', passwd='8'):
 
 class JobManager():
     def __init__(self, script_f):
-        jobs, var_dict = [], {}
         lines = [x.strip() for x in open(script_f) if x.strip()]
         
         # Preprocessing
@@ -122,65 +136,77 @@ class JobManager():
         lines = remove_CUDA(lines)
         lines = remove_nohup(lines)
         
+        scripts = []
         for line in lines:
-            # if '=' in line and (not line.startswith('python')) :
-            #     k, v = line.split('=')
-            #     if v[0] == '"' and v[-1] == '"': # example: T="vgg13"
-            #         v = v[1:-1]
-            #     if '$' in v:
-            #         var_dict[k] = replace_var(v, var_dict)
-            #     else:
-            #         var_dict[k] = v
-            
-            if ' ==> ' in line:
+            if ' ==> ' in line: # TODO: move to preprocessing
                 line = line.split(' ==> ')[1].strip()
 
-            # Collect jobs
-            if 'python ' in line or 'sh ' in line:
-                new_line = replace_var(line, var_dict)
+            # Collect scripts
+            if 'python ' in line or 'sh ' in line: # TODO
+                new_line = line
                 if not is_ignore(new_line):
                     if args.predefined_exps:
                         exp_name = new_line.split('--project ')[1].strip().split()[0]
                         exp_name = exp_name.split('_SERVER')[0]
                         if exp_name in EXPS:
                             how_many = len([x for x in EXPS if x == exp_name])
-                            jobs += [new_line] * how_many
-                            print(f'[{strftime()}] {len(jobs)} Got a job: "{new_line}". Repeated by {how_many} times')
+                            scripts += [new_line] * how_many
+                            print(f'[{strftime()}] {len(scripts)} Got a job: "{new_line}". Repeated by {how_many} times')
                     else:
-                        jobs.append(new_line)
-                        print(f'[{strftime()}] {len(jobs)} Got a job: "{new_line}"')
+                        scripts.append(new_line)
+                        print(f'[{strftime()}] {len(scripts)} Got a job: "{new_line}"')
         
-        repeated_jobs = jobs * args.times # repeat
-        print(f'[{strftime()}] Jobs will be repeated by {args.times} times. Expected #total_jobs: {len(repeated_jobs)}')
+        repeated_scripts = scripts * args.times # Repeat
+        print(f'[{strftime()}] Jobs will be repeated by {args.times} times. Expected #total_jobs: {len(repeated_scripts)}')
+        
+        # Collect jobs
+        total_jobs = []
+        for ix, sc in enumerate(repeated_scripts):
+            total_jobs += [ Job(script=sc, ID=ix) ]
 
-        # Filter by querying the hub
-        for j in jobs:
-            cnt = query_hub(j)
-            left = 0 if cnt >= args.times else args.times - cnt
-            for _ in range(args.times - left):
-                repeated_jobs.remove(j)
-                print(f'[{strftime()}] Remove job "{j}". Left cnt for this job: {left}. Now #total_jobs: {len(repeated_jobs)}')
-        jobs = repeated_jobs
+        # Some jobs may have been finished in the hub, so remove them from current list
+        total_jobs = self.remove_jobs_by_querying_hub(total_jobs)
 
+        # Save to a txt to minitor job progress
         self.jobs_txt = script_f.replace('.sh', '.txt')
-        with open(self.jobs_txt, 'a+') as f:
-            for ix, j in enumerate(jobs):
-                f.write('%s ==> %s\n\n' % (ix, j))
+        with open(self.jobs_txt, 'w+') as f:
+            for j in total_jobs:
+                f.write(f'{j.format_print()}\n\n')
         print(f'[{strftime()}] Save jobs to {self.jobs_txt}')
 
+    def remove_jobs_by_querying_hub(self, total_jobs):
+        r"""Remove jobs by querying the hub.
+        """
+        scripts = [j.get_script() for j in total_jobs]
+        scripts = list(set(scripts))
+
+        for sc in scripts:
+            cnt_finished = query_hub(sc)
+            cnt_todo = 0 if cnt_finished >= args.times else args.times - cnt_finished
+            for _ in range(args.times - cnt_todo):
+                for j in total_jobs:
+                    if j.get_script() == sc:
+                        total_jobs.remove(j)
+                        break
+                print(f'[{strftime()}] Remove job "{j.get_script()}". Left cnt for this job: {cnt_todo}. Now #total_jobs: {len(total_jobs)}')
+        return total_jobs
+
     def read_jobs(self):
+        r"""Read jobs from txt.
+        """
         jobs = []
         for line in open(self.jobs_txt):
             line = line.strip()
             if line and not (line.startswith('[Done') or line.startswith('#')): # TODO: improve end mark
-                jobs.append(line)
+                jobs += [ Job(line) ]
+        jobs = self.remove_jobs_by_querying_hub(jobs)
         return jobs
     
     def update_jobs_txt(self, job, gpu):
         new_txt = ''
         for line in open(self.jobs_txt):
             line = line.strip()
-            if line == job:
+            if line == job.format_print():
                 line = f'# [Done, GPU={gpu}] ' + line
             new_txt += line + '\n'
         with open(self.jobs_txt, 'w') as f:
@@ -236,7 +262,10 @@ class JobManager():
     
     def run(self):
         while 1:
+            print(f'{strftime()} ==> Read jobs...')
             jobs = self.read_jobs()
+            print(f'{strftime()} ==> Read jobs done')
+
             n_job = len(jobs)
             if n_job == 0:
                 print(f'{strftime()} ==> All jobs have been executed. Congrats!')
@@ -250,7 +279,7 @@ class JobManager():
                 current_time = strftime()
                 if len(free_gpus) > 0:
                     gpu = free_gpus[0]
-                    core_script = job.split('==>')[1].strip()
+                    core_script = job.get_script()
                     if args.debug:
                         new_script = 'CUDA_VISIBLE_DEVICES=%s %s --debug' % (gpu, core_script)
                     else:
@@ -264,7 +293,7 @@ class JobManager():
                     print('[%s] ==> No free GPUs right now. Wait for another 60 seconds. %d jobs left.' % (current_time, n_job))
                     time.sleep(60)
                 
-            # after the job is run successfully, update jobs txt
+            # After the job is run successfully, update jobs txt
             self.update_jobs_txt(job, gpu)
 
 r"""Usage: python auto_alloc_jobs.py script.sh
