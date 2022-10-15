@@ -28,7 +28,7 @@ def remove_exp(exp_path):
     return trash_dir
 
 def legal_exp_full_name(name):
-    
+    pass
     
     
 
