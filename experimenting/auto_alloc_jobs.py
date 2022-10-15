@@ -119,10 +119,11 @@ def query_hub(script, userip='wanghuan@155.33.198.138', passwd='8'):
     exp_name = exp_name.split('_SERVER')[0]
     project = os.getcwd().split('/')[-1]
     # os.system(f'echo Y | ssh {userip}')
-    script = f'sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {userip} "ls $HOME/Projects/{project}/Experiments | grep {exp_name}_SERVER | wc -l" > tmp.txt'
+    script = f'sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {userip} "ls \$HOME/Projects/{project}/Experiments | grep {exp_name}_SERVER | wc -l" > tmp.txt'
     os.system(script)
     cnt = open('tmp.txt').readline().strip()
     # print(f'exp_name: {exp_name}, Hub cnt: {int(cnt)}')
+    print(script, cnt)
     os.remove('tmp.txt')
     return  int(cnt)
 
@@ -160,57 +161,54 @@ class JobManager():
         print(f'[{strftime()}] Jobs will be repeated by {args.times} times. Expected #total_jobs: {len(repeated_scripts)}')
         
         # Collect jobs
-        total_jobs = []
+        self.total_jobs = []
         for ix, sc in enumerate(repeated_scripts):
-            total_jobs += [ Job(script=sc, ID=ix) ]
+            self.total_jobs += [ Job(script=sc, ID=ix) ]
 
-        # Some jobs may have been finished in the hub, so remove them from current list
-        total_jobs = self.remove_jobs_by_querying_hub(total_jobs)
+        # # Save to a txt to minitor job progress
+        # self.jobs_txt = script_f.replace('.sh', '.txt')
+        # with open(self.jobs_txt, 'w+') as f:
+        #     for j in self.total_jobs:
+        #         f.write(f'{j.format_print()}\n\n')
+        # print(f'[{strftime()}] Save jobs to {self.jobs_txt}')
 
-        # Save to a txt to minitor job progress
-        self.jobs_txt = script_f.replace('.sh', '.txt')
-        with open(self.jobs_txt, 'w+') as f:
-            for j in total_jobs:
-                f.write(f'{j.format_print()}\n\n')
-        print(f'[{strftime()}] Save jobs to {self.jobs_txt}')
-
-    def remove_jobs_by_querying_hub(self, total_jobs):
+    def get_jobs_by_querying_hub(self):
         r"""Remove jobs by querying the hub.
         """
-        scripts = [j.get_script() for j in total_jobs]
+        scripts = [j.get_script() for j in self.total_jobs]
         scripts = list(set(scripts))
-
+        total_jobs = copy.deepcopy(self.total_jobs)
         for sc in scripts:
             cnt_finished = query_hub(sc)
             cnt_todo = 0 if cnt_finished >= args.times else args.times - cnt_finished
-            for _ in range(args.times - cnt_todo):
+            for _ in range(cnt_finished):
                 for j in total_jobs:
                     if j.get_script() == sc:
                         total_jobs.remove(j)
+                        print(f'[{strftime()}] Remove job "{sc}". Left cnt for this script: {cnt_todo}. Now #total_jobs: {len(total_jobs)}')
                         break
-                print(f'[{strftime()}] Remove job "{j.get_script()}". Left cnt for this job: {cnt_todo}. Now #total_jobs: {len(total_jobs)}')
         return total_jobs
 
-    def read_jobs(self):
-        r"""Read jobs from txt.
-        """
-        jobs = []
-        for line in open(self.jobs_txt):
-            line = line.strip()
-            if line and not (line.startswith('[Done') or line.startswith('#')): # TODO: improve end mark
-                jobs += [ Job(line) ]
-        jobs = self.remove_jobs_by_querying_hub(jobs)
-        return jobs
+    # def read_jobs(self):
+    #     r"""Read jobs from txt.
+    #     """
+    #     jobs = []
+    #     for line in open(self.jobs_txt):
+    #         line = line.strip()
+    #         if line and not (line.startswith('[Done') or line.startswith('#')): # TODO: improve end mark
+    #             jobs += [ Job(line) ]
+    #     jobs = self.get_jobs_by_querying_hub(jobs)
+    #     return jobs
     
-    def update_jobs_txt(self, job, gpu):
-        new_txt = ''
-        for line in open(self.jobs_txt):
-            line = line.strip()
-            if line == job.format_print():
-                line = f'# [Done, GPU={gpu}] ' + line
-            new_txt += line + '\n'
-        with open(self.jobs_txt, 'w') as f:
-            f.write(new_txt)
+    # def update_jobs_txt(self, job, gpu):
+    #     new_txt = ''
+    #     for line in open(self.jobs_txt):
+    #         line = line.strip()
+    #         if line == job.format_print():
+    #             line = f'# [Done, GPU={gpu}] ' + line
+    #         new_txt += line + '\n'
+    #     with open(self.jobs_txt, 'w') as f:
+    #         f.write(new_txt)
 
     def get_free_GPU_once(self):
         free_gpus, busy_gpus = [], []
@@ -262,9 +260,9 @@ class JobManager():
     
     def run(self):
         while 1:
-            print(f'{strftime()} ==> Read jobs...')
-            jobs = self.read_jobs()
-            print(f'{strftime()} ==> Read jobs done')
+            print(f'{strftime()} ==> Get jobs...')
+            jobs = self.get_jobs_by_querying_hub()
+            print(f'{strftime()} ==> Get jobs done')
 
             n_job = len(jobs)
             if n_job == 0:
@@ -293,8 +291,8 @@ class JobManager():
                     print('[%s] ==> No free GPUs right now. Wait for another 60 seconds. %d jobs left.' % (current_time, n_job))
                     time.sleep(60)
                 
-            # After the job is run successfully, update jobs txt
-            self.update_jobs_txt(job, gpu)
+            # # After the job is run successfully, update jobs txt
+            # self.update_jobs_txt(job, gpu)
 
 r"""Usage: python auto_alloc_jobs.py script.sh
 """
