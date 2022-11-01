@@ -3,15 +3,10 @@ import torch.nn as nn
 import torch.nn.init as init
 from torch.utils.data import Dataset
 import torch.nn.functional as F
-# import torchvision
 from torch.autograd import Variable
-from pprint import pprint
-import time, math, os, sys, copy, numpy as np, shutil as sh
-# import matplotlib.pyplot as plt
-# from mpl_toolkits.axes_grid1 import make_axes_locatable
+import time, os, copy, numpy as np
 from collections import OrderedDict
 import glob
-# from PIL import Image
 import pickle
 import subprocess
 import functools
@@ -1314,3 +1309,6 @@ def print_runtime(fn):
         print(f'( "{fn.__name__}" executed in {t1 - t0:.4f}s )')
         return ret
     return wrapper
+
+def use_arg(args, key):
+    return hasattr(args, key) and args.__dict__[key]
