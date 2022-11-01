@@ -1310,5 +1310,5 @@ def print_runtime(fn):
         return ret
     return wrapper
 
-def use_arg(args, key):
-    return hasattr(args, key) and args.__dict__[key]
+def get_arg(args, key):
+    return args.__dict__.get(key)
