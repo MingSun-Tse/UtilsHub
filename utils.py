@@ -299,7 +299,7 @@ class PresetLRScheduler(object):
 
         # decay_schedule is a dictionary
         # which is for specifying iteration -> lr
-        self.decay_schedule = {}
+        self.decay_schedule = OrderedDict()
         for k, v in decay_schedule.items(): # a dict, example: {"0":0.001, "30":0.00001, "45":0.000001}
             self.decay_schedule[int(float(k))] = v # to float first in case of '1e3'
         # print('Using a preset learning rate schedule:')
@@ -367,7 +367,7 @@ def strdict_to_dict(sstr, ttype=float):
     """
     if not sstr:
         return sstr
-    out = {}
+    out = OrderedDict()
     sstr = sstr.strip()
     if sstr.startswith('{') and sstr.endswith('}'):
         sstr = sstr[1:-1]
