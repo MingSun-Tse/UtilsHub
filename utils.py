@@ -1312,3 +1312,20 @@ def print_runtime(fn):
 
 def get_arg(args, key):
     return args.__dict__.get(key)
+
+def scp_experiment(scp_script, userip, experiments_dir, exp_name, ExpID):
+    lines = open(scp_script).readlines()
+    for line in lines:
+        if ' scp ' in line and '@' in line:
+            break
+    for i in line.strip().split():
+        if '@' in i and ':' in i:
+            hub_userip = i.split(':')[0]
+            break
+    if userip != hub_userip:
+        script = f'sh {scp_script} {experiments_dir} {exp_name}_{ExpID}'
+        os.system(script)
+        print('==> Final scp done')
+        if not os.path.exists(f'{experiments_dir}/Trash'):
+            os.makedirs(f'{experiments_dir}/Trash')
+        os.system(f'mv {experiments_dir}/{exp_name}_{ExpID} {experiments_dir}/Trash')
