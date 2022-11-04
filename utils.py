@@ -1313,7 +1313,12 @@ def print_runtime(fn):
 def get_arg(args, key):
     return args.__dict__.get(key)
 
-def scp_experiment(scp_script, userip, experiments_dir, exp_name, ExpID):
+def scp_experiment(scp_script, logger, args, mv=False):
+    userip = logger.userip
+    ExpID = logger.ExpID
+    experiments_dir = args.experiments_dir
+    exp_name = args.experiment_name if hasattr(args, 'experiment_name') else args.project_name
+    
     lines = open(scp_script).readlines()
     for line in lines:
         if ' scp ' in line and '@' in line:
@@ -1322,10 +1327,12 @@ def scp_experiment(scp_script, userip, experiments_dir, exp_name, ExpID):
         if '@' in i and ':' in i:
             hub_userip = i.split(':')[0]
             break
-    if userip != hub_userip:
+    need_scp = not args.debug and userip != hub_userip
+    if need_scp:
         script = f'sh {scp_script} {experiments_dir} {exp_name}_{ExpID}'
         os.system(script)
-        print('==> Final scp done')
-        if not os.path.exists(f'{experiments_dir}/Trash'):
-            os.makedirs(f'{experiments_dir}/Trash')
-        os.system(f'mv {experiments_dir}/{exp_name}_{ExpID} {experiments_dir}/Trash')
+        if mv:
+            if not os.path.exists(f'{experiments_dir}/Trash'):
+                os.makedirs(f'{experiments_dir}/Trash')
+            os.system(f'mv {experiments_dir}/{exp_name}_{ExpID} {experiments_dir}/Trash')
+    return need_scp
