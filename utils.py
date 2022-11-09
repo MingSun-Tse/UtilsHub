@@ -1280,7 +1280,7 @@ def get_script_from_log(log_path, max_lines=10):
     for line in open(log_path):
         cnt += 1
         line = line.strip()
-        if line.startswith('CUDA_VISIBLE_DEVICES='):
+        if line.startswith('CUDA_VISIBLE_DEVICES=') or line.startswith('python'):
             return line
         if cnt == max_lines:
             return None
