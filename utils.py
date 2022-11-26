@@ -10,6 +10,7 @@ import glob
 import pickle
 import subprocess
 import functools
+from PIL import Image
 
 def _weights_init(m):
     if isinstance(m, (nn.Conv2d, nn.Linear)):
