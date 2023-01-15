@@ -117,7 +117,7 @@ def get_n_params(model):
 def get_n_params_(model, sparse=False):
     n_params = 0
     LEARNABLES = (nn.Conv1d, nn.Conv2d, nn.Conv3d, nn.Linear) # Only consider Conv2d and Linear, no BN
-    print(f'The following layers are accounted for: {LEARNABLES}')
+    print(f'The following layers are accounted for: {[x.__name__ for x in LEARNABLES]}')
     for _, module in model.named_modules():
         if isinstance(module, LEARNABLES):
             n_params += module.weight.numel()
@@ -1337,3 +1337,28 @@ def scp_experiment(scp_script, logger, args, mv=False):
                 os.makedirs(f'{experiments_dir}/Trash')
             os.system(f'mv {experiments_dir}/{exp_name}_{ExpID} {experiments_dir}/Trash')
     return need_scp
+
+def poly_schedule(x: int,
+             x_max: int,
+             y_max: float,
+             p: float,
+             x_reserve: bool = False,
+             y_reserve: bool = False,
+) -> float:
+    r"""A poly scheduling function: y = A * x^p
+
+    Args:
+        `x` and `y` starts from 0.
+
+    Returns:
+        a float (y).
+    """
+    assert x_max > 0 # for / max
+    A = y_max / pow(x_max, p)
+    y = A * pow(x, p)
+
+    if y_reserve:
+        y = y_max - y
+    if x_reserve:
+        raise NotImplementedError
+    return y
