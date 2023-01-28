@@ -1207,6 +1207,23 @@ def check_grad_stats(model):
             grad_abs_var, grad_abs_mean = grad_abs.var(), grad_abs.mean()
             print(f'[{name:>20s}] layer grad_abs: mean {grad_abs_mean:.8f} variance {grad_abs_var:.8f}')
 
+def check_grad_stats_v2(model, layers, selected_layers, grad_stats, is_print):
+    modules = {}
+    for n, m in model.named_modules():
+        modules[n] = m
+    ordered_modules = OrderedDict()
+    for n in layers:
+        ordered_modules[n] = modules[n]
+    del modules
+    for n, m in ordered_modules.items():
+        if n in selected_layers and hasattr(m, 'weight') and m.weight.grad is not None:
+            grad_abs = m.weight.grad.abs().cpu().data.numpy()
+            grad_abs_var, grad_abs_mean = grad_abs.var(), grad_abs.mean()
+            if is_print:
+                print(f'{layers[n].print_prefix} layer grad_abs: mean {grad_abs_mean:.8f} variance {grad_abs_var:.8f}')
+            if n not in grad_stats:
+                grad_stats[n] = []
+            grad_stats[n].append([grad_abs_mean, grad_abs_var])
 
 def check_weight_stats(model):
     for name, module in model.named_modules():
